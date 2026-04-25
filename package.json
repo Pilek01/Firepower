@@ -1,0 +1,10 @@
+{
+  "name": "sea-of-sails-battle-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/simulator-core.js && node --check src/app.js && node --check src/browser-bundle.js"
+  }
+}

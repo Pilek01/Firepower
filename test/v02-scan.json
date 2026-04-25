@@ -1,0 +1,16 @@
+{
+  "scan": {
+    "fleet": {
+      "cargoShip": 3,
+      "warship": 2
+    },
+    "research": {
+      "hulls": 4,
+      "navigation": 5,
+      "sailing": 5,
+      "shipBuilding": 4,
+      "weapons": 4
+    },
+    "talents": {}
+  }
+}

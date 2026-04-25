@@ -1,0 +1,23 @@
+Stan początkowy
+⛵ Agresor — flota
+210 jednostek
+⛵ Bryg
+×50
+📦 Statek Towarowy
+×50
+🛶 Łódź Zwiadowcza
+×100
+🛶 Slup
+×10
+🚢 Obrońca — flota
+127 jednostek
+⛵ Bryg
+×18
+📦 Statek Towarowy
+×17
+🚢 Fregata
+×1
+🛶 Slup
+×91
+⛵ Agresor — flota
+65 przeżyło

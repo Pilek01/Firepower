@@ -1,0 +1,42 @@
+{
+  "modifiers": {
+    "aggressor": {
+      "weaponsPct": 29,
+      "hullsPct": 31,
+      "armorPct": 25,
+      "cannonsFlat": 6
+    },
+    "defender": {
+      "weaponsPct": 20,
+      "hullsPct": 15,
+      "armorPct": 0,
+      "cannonsFlat": 0
+    }
+  },
+  "forces": {
+    "initial": {
+      "aggressorFleet": {
+        "warship": 89
+      },
+      "defenderFleet": {
+        "brig": 11,
+        "cargoShip": 3,
+        "frigate": 6,
+        "sloop": 8
+      }
+    }
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "damage": {
+        "aggressor": 10035.168,
+        "defender": 2245.68
+      },
+      "fire": {
+        "aggressorShots": 3164,
+        "defenderShots": 654
+      }
+    }
+  ]
+}
