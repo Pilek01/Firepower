@@ -3,160 +3,114 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>FIREPOWER</title>
+    <title>FIREPOWER V3</title>
     <link rel="stylesheet" href="./style.css">
   </head>
   <body>
     <main class="app-shell">
-      <section class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Sea of Sails combat lab</p>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Sea of Sails</p>
           <h1>FIREPOWER</h1>
-          <p class="subtitle">Symulator bitew V0.2 z bazowymi statkami, modyfikatorami, JSON-em skanu i suppression fire.</p>
         </div>
-        <div class="fire-emblem" aria-hidden="true">
-          <span class="ring"></span>
-          <span class="flame f1"></span>
-          <span class="flame f2"></span>
-          <span class="spark s1"></span>
-          <span class="spark s2"></span>
-        </div>
-      </section>
+        <p class="version-pill">Combat V3</p>
+      </header>
 
-      <section class="workspace">
-        <form id="sim-form" class="command-panel" autocomplete="off">
-          <section class="import-strip">
-            <div class="section-title">
-              <span>01</span>
-              <h2>Import danych</h2>
-            </div>
-            <div class="import-grid">
-              <label>
-                Moja flota / tekst
-                <textarea id="attacker-import-text" rows="6" placeholder="Bryg x42&#10;Statek Towarowy x33&#10;Okręt Wojenny x18"></textarea>
-              </label>
-              <label>
-                Skan przeciwnika JSON
-                <textarea id="defender-import-text" rows="6" placeholder="{ &quot;scan&quot;: { &quot;fleet&quot;: { &quot;warship&quot;: 2 }, &quot;research&quot;: { &quot;weapons&quot;: 4 } } }"></textarea>
-              </label>
-              <label>
-                Raport JSON po bitwie
-                <textarea id="report-import-text" rows="6" placeholder="{ &quot;modifiers&quot;: { ... }, &quot;forces&quot;: { ... }, &quot;rounds&quot;: [ ... ] }"></textarea>
-              </label>
-            </div>
-            <div class="action-row">
-              <button type="button" id="import-attacker">Wczytaj moją flotę</button>
-              <button type="button" id="import-defender">Wczytaj skan wroga</button>
-              <button type="button" id="import-report">Wczytaj raport JSON</button>
-              <button type="button" id="clear-imports" class="ghost-btn">Wyczyść import</button>
-              <p id="import-status">Gotowe. JSON skanu ustawi flotę i bonusy obrońcy.</p>
-            </div>
-          </section>
+      <section class="layout">
+        <form id="sim-form" class="panel input-panel" autocomplete="off">
+          <div class="paste-grid">
+            <label>
+              Moja flota
+              <textarea id="attacker-import-text" rows="14" placeholder="Bryg x24&#10;Statek Towarowy x70&#10;Okret Wojenny x71"></textarea>
+            </label>
+            <label>
+              Flota wroga / skan JSON
+              <textarea id="defender-import-text" rows="14" placeholder="{ &quot;scan&quot;: { &quot;fleet&quot;: { &quot;brig&quot;: 8, &quot;cargoShip&quot;: 55 } } }"></textarea>
+            </label>
+          </div>
 
-          <section class="fleet-grid">
-            <div class="fleet-panel attacker-panel">
-              <div class="section-title">
-                <span>02A</span>
+          <div class="action-row">
+            <button type="submit" class="primary-btn">Symuluj</button>
+            <button type="button" id="load-attacker">Wczytaj moja</button>
+            <button type="button" id="load-defender">Wczytaj wroga</button>
+            <button type="button" id="clear-imports" class="ghost-btn">Wyczysc</button>
+          </div>
+          <p id="import-status" class="status">Gotowe. Wklej tekst floty albo JSON skanu.</p>
+
+          <details class="advanced">
+            <summary>Ustawienia i debug</summary>
+            <div class="advanced-grid">
+              <section>
                 <h2>Agresor</h2>
-              </div>
-              <div id="attacker-fleet" class="ship-list"></div>
-              <div id="attacker-modifiers" class="modifier-grid"></div>
+                <div id="attacker-modifiers" class="modifier-grid"></div>
+              </section>
+              <section>
+                <h2>Obronca</h2>
+                <div id="defender-modifiers" class="modifier-grid"></div>
+              </section>
+              <section class="manual-section">
+                <h2>Reczna korekta flot</h2>
+                <div class="manual-grid">
+                  <div>
+                    <h3>Moja flota</h3>
+                    <div id="attacker-manual-fleet" class="manual-fleet"></div>
+                  </div>
+                  <div>
+                    <h3>Flota wroga</h3>
+                    <div id="defender-manual-fleet" class="manual-fleet"></div>
+                  </div>
+                </div>
+              </section>
+              <section>
+                <h2>Symulacja</h2>
+                <div class="settings-grid">
+                  <label>Proby <input id="runs" type="number" min="1" max="3000" step="1" value="300"></label>
+                  <label>Rundy <input id="max-rounds" type="number" min="1" max="12" step="1" value="6"></label>
+                  <label>Seed <input id="seed" type="text" value="firepower"></label>
+                </div>
+              </section>
+              <section>
+                <h2>Raport JSON</h2>
+                <textarea id="report-import-text" rows="6" placeholder="Opcjonalnie: raport JSON do porownania"></textarea>
+                <button type="button" id="import-report" class="ghost-btn">Porownaj raport</button>
+              </section>
             </div>
-
-            <div class="fleet-panel defender-panel">
-              <div class="section-title">
-                <span>02B</span>
-                <h2>Obrońca</h2>
-              </div>
-              <div id="defender-fleet" class="ship-list"></div>
-              <div id="defender-modifiers" class="modifier-grid"></div>
-            </div>
-          </section>
-
-          <section class="settings-panel">
-            <div class="section-title">
-              <span>03</span>
-              <h2>Parametry symulacji</h2>
-            </div>
-            <div class="settings-grid">
-              <label>
-                Symulacje
-                <input id="runs" type="number" min="1" max="3000" step="1" value="300">
-              </label>
-              <label>
-                Maks. rund
-                <input id="max-rounds" type="number" min="1" max="12" step="1" value="6">
-              </label>
-              <label>
-                Bazowa celność
-                <input id="base-accuracy" type="number" min="5" max="95" step="1" value="60">
-              </label>
-              <label>
-                Losowość
-                <input id="accuracy-variance" type="number" min="0" max="25" step="1" value="10">
-              </label>
-              <label>
-                Model celu
-                <select id="target-mode">
-                  <option value="focused" selected>Skupiony</option>
-                  <option value="spread">Rozproszony</option>
-                </select>
-              </label>
-              <label>
-                Seed
-                <input id="seed" type="text" value="firepower">
-              </label>
-              <button type="submit" class="simulate-btn">Symuluj</button>
-            </div>
-          </section>
+          </details>
         </form>
 
-        <aside class="results-panel" aria-live="polite">
+        <aside class="panel results-panel" aria-live="polite">
           <section class="outcome-grid">
-            <div class="metric">
-              <span>Agresor</span>
-              <strong id="attacker-rate">-</strong>
-            </div>
-            <div class="metric">
-              <span>Obrońca</span>
-              <strong id="defender-rate">-</strong>
-            </div>
-            <div class="metric">
-              <span>Remis</span>
-              <strong id="draw-rate">-</strong>
-            </div>
+            <div class="metric"><span>Agresor</span><strong id="attacker-rate">-</strong></div>
+            <div class="metric"><span>Obronca</span><strong id="defender-rate">-</strong></div>
+            <div class="metric"><span>Remis</span><strong id="draw-rate">-</strong></div>
           </section>
 
-          <section class="result-card">
-            <h2>Straty średnie</h2>
-            <div class="loss-columns">
+          <section class="summary-card">
+            <h2>Straty srednie</h2>
+            <div class="loss-grid">
               <div>
                 <h3>Agresor</h3>
                 <p id="attacker-loss-points">- pkt</p>
                 <ul id="attacker-losses"></ul>
               </div>
               <div>
-                <h3>Obrońca</h3>
+                <h3>Obronca</h3>
                 <p id="defender-loss-points">- pkt</p>
                 <ul id="defender-losses"></ul>
               </div>
             </div>
           </section>
 
-          <section class="result-card">
-            <h2>Złomowisko</h2>
+          <section class="summary-card">
+            <h2>Zlomowisko</h2>
             <div id="debris-output" class="resource-row"></div>
           </section>
 
-          <section class="result-card">
-            <h2>Przebieg próbki</h2>
+          <details class="debug-card">
+            <summary>Combat log i porownanie</summary>
+            <div id="report-compare" class="compare-output">Wklej raport JSON w debug, aby zobaczyc porownanie.</div>
             <div id="battle-log"></div>
-          </section>
-
-          <section class="result-card compare-card">
-            <h2>Porównanie z raportem JSON</h2>
-            <div id="report-compare">Wklej raport JSON, aby zobaczyć różnice.</div>
-          </section>
+          </details>
         </aside>
       </section>
     </main>

@@ -9,13 +9,16 @@ import {
 } from "./simulator-core.js";
 
 const MODIFIERS = [
-  ["weaponsPct", "Uzbrojenie %"],
-  ["hullsPct", "Kadłuby %"],
+  ["weaponsPct", "Atak %"],
+  ["hullsPct", "HP %"],
   ["armorPct", "Pancerz %"],
   ["cannonsFlat", "Armaty +"],
 ];
 
 let loadedReport = null;
+let currentAttackerFleet = {};
+let currentDefenderFleet = {};
+const manualDirty = { attacker: false, defender: false };
 
 const form = document.querySelector("#sim-form");
 const importStatus = document.querySelector("#import-status");
@@ -36,28 +39,31 @@ function formatPercent(value) {
 
 function setStatus(message, type = "") {
   importStatus.textContent = message;
-  importStatus.className = type;
+  importStatus.className = `status ${type}`.trim();
 }
 
-function shipMeta(ship) {
-  return `atk ${ship.attack} · hp ${ship.hp} · pancerz ${ship.shield} · armaty ${ship.cannons}`;
-}
-
-function renderFleetControls(side) {
-  const host = document.querySelector(`#${side}-fleet`);
-  host.innerHTML = "";
-  for (const [shipId, ship] of Object.entries(SHIPS)) {
-    const row = document.createElement("label");
-    row.className = "ship-row";
-    row.innerHTML = `
-      <span class="ship-name">
-        <strong>${ship.name}</strong>
-        <span>${shipMeta(ship)}</span>
-      </span>
-      <input data-side="${side}" data-ship="${shipId}" type="number" min="0" step="1" value="0">
-    `;
-    host.append(row);
+function tryParseJson(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
   }
+}
+
+function fleetCount(fleet) {
+  return Object.values(fleet || {}).reduce((sum, count) => sum + count, 0);
+}
+
+function parseFleetInput(text) {
+  const source = String(text || "").trim();
+  if (!source) return { fleet: {}, modifiers: null, type: "empty" };
+  const json = tryParseJson(source);
+  if (json) {
+    const scan = parseScanJson(json);
+    return { fleet: scan.fleet, modifiers: scan.modifiers, type: "json" };
+  }
+  const parsed = parseFleetText(source);
+  return { fleet: parsed.all, modifiers: null, type: "text" };
 }
 
 function renderModifierControls(side) {
@@ -65,31 +71,45 @@ function renderModifierControls(side) {
   host.innerHTML = "";
   for (const [id, label] of MODIFIERS) {
     const item = document.createElement("label");
-    item.innerHTML = `
-      ${label}
-      <input data-side="${side}" data-modifier="${id}" type="number" step="1" value="0">
-    `;
+    item.innerHTML = `${label}<input data-side="${side}" data-modifier="${id}" type="number" step="1" value="0">`;
     host.append(item);
   }
 }
 
-function setFleet(side, fleet) {
-  document.querySelectorAll(`input[data-side="${side}"][data-ship]`).forEach((input) => {
-    input.value = fleet[input.dataset.ship] || 0;
+function renderManualFleetControls(side) {
+  const host = document.querySelector(`#${side}-manual-fleet`);
+  host.innerHTML = "";
+  for (const [shipId, ship] of Object.entries(SHIPS)) {
+    const row = document.createElement("label");
+    row.className = "manual-ship-row";
+    row.innerHTML = `
+      <span>${ship.name}</span>
+      <input data-side="${side}" data-manual-ship="${shipId}" type="number" min="0" step="1" value="0">
+    `;
+    row.querySelector("input").addEventListener("input", () => {
+      manualDirty[side] = true;
+    });
+    host.append(row);
+  }
+}
+
+function setManualFleet(side, fleet) {
+  document.querySelectorAll(`input[data-side="${side}"][data-manual-ship]`).forEach((input) => {
+    input.value = fleet[input.dataset.manualShip] || 0;
   });
 }
 
-function getFleet(side) {
+function getManualFleet(side) {
   const fleet = {};
-  document.querySelectorAll(`input[data-side="${side}"][data-ship]`).forEach((input) => {
+  document.querySelectorAll(`input[data-side="${side}"][data-manual-ship]`).forEach((input) => {
     const count = Math.max(0, Math.floor(Number(input.value) || 0));
-    if (count) fleet[input.dataset.ship] = count;
+    if (count) fleet[input.dataset.manualShip] = count;
   });
   return fleet;
 }
 
 function setModifiers(side, modifiers) {
-  const values = { ...DEFAULT_MODIFIERS, ...modifiers };
+  const values = { ...DEFAULT_MODIFIERS, ...(modifiers || {}) };
   document.querySelectorAll(`input[data-side="${side}"][data-modifier]`).forEach((input) => {
     input.value = values[input.dataset.modifier] || 0;
   });
@@ -107,86 +127,7 @@ function getSettings() {
   return {
     runs: Math.max(1, Math.floor(Number(document.querySelector("#runs").value) || 1)),
     maxRounds: Math.max(1, Math.floor(Number(document.querySelector("#max-rounds").value) || 1)),
-    baseAccuracy: Math.max(0.05, Math.min(0.95, Number(document.querySelector("#base-accuracy").value) / 100 || 0.5)),
-    accuracyVariance: Math.max(0, Math.min(0.25, Number(document.querySelector("#accuracy-variance").value) / 100 || 0)),
-    targetMode: document.querySelector("#target-mode").value,
   };
-}
-
-function fleetCount(fleet) {
-  return Object.values(fleet || {}).reduce((sum, count) => sum + count, 0);
-}
-
-function tryParseJson(text) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
-function importAttacker() {
-  const text = attackerImportText.value.trim();
-  if (!text) {
-    setStatus("Wklej najpierw moją flotę.", "bad");
-    return;
-  }
-  const json = tryParseJson(text);
-  if (json) {
-    const scan = parseScanJson(json);
-    setFleet("attacker", scan.fleet);
-    setModifiers("attacker", scan.modifiers);
-    setStatus(`Wczytano agresora z JSON: ${fleetCount(scan.fleet)} jednostek.`, "good");
-  } else {
-    const parsed = parseFleetText(text);
-    setFleet("attacker", parsed.all);
-    setStatus(`Wczytano agresora z tekstu: ${fleetCount(parsed.all)} jednostek.`, "good");
-  }
-  simulate();
-}
-
-function importDefender() {
-  const text = defenderImportText.value.trim();
-  if (!text) {
-    setStatus("Wklej najpierw skan przeciwnika.", "bad");
-    return;
-  }
-  const json = tryParseJson(text);
-  if (json) {
-    const scan = parseScanJson(json);
-    setFleet("defender", scan.fleet);
-    setModifiers("defender", scan.modifiers);
-    setStatus(`Wczytano obrońcę z JSON: ${fleetCount(scan.fleet)} jednostek i bonusy ze skanu.`, "good");
-  } else {
-    const parsed = parseFleetText(text);
-    setFleet("defender", parsed.all);
-    setStatus(`Wczytano obrońcę z tekstu: ${fleetCount(parsed.all)} jednostek.`, "good");
-  }
-  simulate();
-}
-
-function importReport() {
-  const text = reportImportText.value.trim();
-  if (!text) {
-    setStatus("Wklej najpierw raport JSON.", "bad");
-    return;
-  }
-  try {
-    const plannedFleet = {
-      attacker: getFleet("attacker"),
-      defender: getFleet("defender"),
-    };
-    loadedReport = parseBattleReportJson(text);
-    loadedReport.plannedFleet = plannedFleet;
-    setFleet("attacker", loadedReport.attackerFleet);
-    setFleet("defender", loadedReport.defenderFleet);
-    setModifiers("attacker", loadedReport.attackerModifiers);
-    setModifiers("defender", loadedReport.defenderModifiers);
-    setStatus("Wczytano raport JSON: floty i modyfikatory ustawione.", "good");
-    simulate();
-  } catch (error) {
-    setStatus(`Nie udało się odczytać raportu JSON: ${error.message}`, "bad");
-  }
 }
 
 function renderFleetList(hostId, values) {
@@ -217,7 +158,7 @@ function renderDebris(debris) {
 function renderBattleLog(sample) {
   const host = document.querySelector("#battle-log");
   host.innerHTML = "";
-  if (!sample || !sample.rounds.length) {
+  if (!sample?.rounds?.length) {
     host.textContent = "Brak rund do pokazania.";
     return;
   }
@@ -226,60 +167,84 @@ function renderBattleLog(sample) {
     entry.className = "round-entry";
     entry.innerHTML = `
       <h3>Runda ${round.number}</h3>
-      <p>Agresor: ${formatNumber(round.defender.damage)} obrażeń, ${formatNumber(round.defender.hits)} trafień z ${formatNumber(round.defender.shots)} strzałów. Obrońca pochłonął ${formatNumber(round.defender.absorbed)}.</p>
-      <p>Obrońca: ${formatNumber(round.attacker.damage)} obrażeń, ${formatNumber(round.attacker.hits)} trafień z ${formatNumber(round.attacker.shots)} strzałów. Agresor pochłonął ${formatNumber(round.attacker.absorbed)}.</p>
-      <p>Flota agresora ${round.attacker.before} → ${round.attacker.after}; flota obrońcy ${round.defender.before} → ${round.defender.after}.</p>
+      <p>Agresor: ${formatNumber(round.defender.damage)} dmg, ${formatNumber(round.defender.hits)} trafien, ${formatNumber(round.defender.shots)} strzalow + ${formatNumber(round.defender.rapidExtraShots)} rapid.</p>
+      <p>Obronca: ${formatNumber(round.attacker.damage)} dmg, ${formatNumber(round.attacker.hits)} trafien, ${formatNumber(round.attacker.shots)} strzalow + ${formatNumber(round.attacker.rapidExtraShots)} rapid.</p>
+      <p>Flota: agresor ${round.attacker.before} -> ${round.attacker.after}; obronca ${round.defender.before} -> ${round.defender.after}.</p>
     `;
     host.append(entry);
   }
 }
 
-function renderFleetWarnings(label, differences) {
-  if (!differences.length) return "";
-  const rows = differences.map((diff) => {
-    const ship = SHIPS[diff.shipId];
-    return `<li>${ship?.name || diff.shipId}: symulacja ${formatNumber(diff.expected)}, raport ${formatNumber(diff.actual)}</li>`;
-  }).join("");
-  return `
-    <div class="compare-warning">
-      <strong>${label}: flota z symulacji różni się od raportu</strong>
-      <ul>${rows}</ul>
-    </div>
-  `;
-}
-
 function renderReportCompare(result) {
   const host = document.querySelector("#report-compare");
-  if (!loadedReport || !loadedReport.rounds?.length) {
-    host.textContent = "Wklej raport JSON, aby zobaczyć różnice.";
+  if (!loadedReport?.rounds?.length) {
+    host.textContent = "Wklej raport JSON w debug, aby zobaczyc porownanie.";
     return;
   }
   const reportRound = loadedReport.rounds[0];
   const simRound = result.sample?.rounds?.[0];
   if (!simRound) {
-    host.textContent = "Symulacja nie ma rund do porównania.";
+    host.textContent = "Symulacja nie ma rund do porownania.";
     return;
   }
-  const plannedAttackerDiff = loadedReport.plannedFleet
-    ? compareFleets(loadedReport.plannedFleet.attacker, loadedReport.attackerFleet)
-    : [];
-  const plannedDefenderDiff = loadedReport.plannedFleet
-    ? compareFleets(loadedReport.plannedFleet.defender, loadedReport.defenderFleet)
-    : [];
-  const fleetWarnings = renderFleetWarnings("Agresor", plannedAttackerDiff) + renderFleetWarnings("Obrońca", plannedDefenderDiff);
+  const defenderDiff = compareFleets(loadedReport.plannedFleet?.defender || {}, loadedReport.defenderFleet);
+  const warnings = defenderDiff.length
+    ? `<div class="compare-warning"><strong>Flota wroga roznila sie od raportu</strong><ul>${defenderDiff.map((diff) => `<li>${SHIPS[diff.shipId]?.name || diff.shipId}: sym ${formatNumber(diff.expected)}, raport ${formatNumber(diff.actual)}</li>`).join("")}</ul></div>`
+    : "";
   host.innerHTML = `
-    ${fleetWarnings}
-    <div class="compare-row"><span>Strzały agresora</span><strong>${formatNumber(simRound.defender.shots)} / ${formatNumber(reportRound.fire.aggressorShots)}</strong></div>
-    <div class="compare-row"><span>Strzały obrońcy</span><strong>${formatNumber(simRound.attacker.shots)} / ${formatNumber(reportRound.fire.defenderShots)}</strong></div>
-    <div class="compare-row"><span>Obrażenia agresora</span><strong>${formatNumber(simRound.defender.damage)} / ${formatNumber(reportRound.damage.aggressor)}</strong></div>
-    <div class="compare-row"><span>Obrażenia obrońcy</span><strong>${formatNumber(simRound.attacker.damage)} / ${formatNumber(reportRound.damage.defender)}</strong></div>
+    ${warnings}
+    <div class="compare-row"><span>Strzaly agresora</span><strong>${formatNumber(simRound.defender.shots)} / ${formatNumber(reportRound.fire?.aggressorShots)}</strong></div>
+    <div class="compare-row"><span>Strzaly obroncy</span><strong>${formatNumber(simRound.attacker.shots)} / ${formatNumber(reportRound.fire?.defenderShots)}</strong></div>
+    <div class="compare-row"><span>Obrazenia agresora</span><strong>${formatNumber(simRound.defender.damage)} / ${formatNumber(reportRound.damage?.aggressor)}</strong></div>
+    <div class="compare-row"><span>Obrazenia obroncy</span><strong>${formatNumber(simRound.attacker.damage)} / ${formatNumber(reportRound.damage?.defender)}</strong></div>
   `;
 }
 
+function loadAttacker() {
+  const parsed = parseFleetInput(attackerImportText.value);
+  currentAttackerFleet = parsed.fleet;
+  if (parsed.modifiers) setModifiers("attacker", parsed.modifiers);
+  setManualFleet("attacker", currentAttackerFleet);
+  manualDirty.attacker = false;
+  setStatus(`Wczytano moja flote: ${fleetCount(currentAttackerFleet)} jednostek.`, "good");
+}
+
+function loadDefender() {
+  const parsed = parseFleetInput(defenderImportText.value);
+  currentDefenderFleet = parsed.fleet;
+  if (parsed.modifiers) setModifiers("defender", parsed.modifiers);
+  setManualFleet("defender", currentDefenderFleet);
+  manualDirty.defender = false;
+  setStatus(`Wczytano flote wroga: ${fleetCount(currentDefenderFleet)} jednostek.`, "good");
+}
+
+function loadReport() {
+  const text = reportImportText.value.trim();
+  if (!text) {
+    setStatus("Wklej raport JSON w debug.", "bad");
+    return;
+  }
+  try {
+    loadedReport = parseBattleReportJson(text);
+    loadedReport.plannedFleet = {
+      attacker: currentAttackerFleet,
+      defender: currentDefenderFleet,
+    };
+    setStatus("Raport JSON gotowy do porownania.", "good");
+    simulate();
+  } catch (error) {
+    setStatus(`Nie udalo sie odczytac raportu: ${error.message}`, "bad");
+  }
+}
+
 function simulate() {
+  currentAttackerFleet = getManualFleet("attacker");
+  currentDefenderFleet = getManualFleet("defender");
+  if (!fleetCount(currentAttackerFleet) && attackerImportText.value.trim()) loadAttacker();
+  if (!fleetCount(currentDefenderFleet) && defenderImportText.value.trim()) loadDefender();
   const result = runMonteCarlo({
-    attackerFleet: getFleet("attacker"),
-    defenderFleet: getFleet("defender"),
+    attackerFleet: currentAttackerFleet,
+    defenderFleet: currentDefenderFleet,
     attackerModifiers: getModifiers("attacker"),
     defenderModifiers: getModifiers("defender"),
     settings: getSettings(),
@@ -301,30 +266,63 @@ function clearImports() {
   attackerImportText.value = "";
   defenderImportText.value = "";
   reportImportText.value = "";
+  currentAttackerFleet = {};
+  currentDefenderFleet = {};
+  setManualFleet("attacker", {});
+  setManualFleet("defender", {});
+  manualDirty.attacker = false;
+  manualDirty.defender = false;
   loadedReport = null;
-  setStatus("Import wyczyszczony.");
-  renderReportCompare({ sample: null });
-}
-
-function init() {
-  renderFleetControls("attacker");
-  renderFleetControls("defender");
-  renderModifierControls("attacker");
-  renderModifierControls("defender");
-  setFleet("attacker", { warship: 89 });
-  setFleet("defender", { brig: 11, cargo: 3, frigate: 6, sloop: 8 });
-  setModifiers("attacker", { weaponsPct: 29, hullsPct: 31, armorPct: 25, cannonsFlat: 6 });
-  setModifiers("defender", { weaponsPct: 20, hullsPct: 15, armorPct: 0, cannonsFlat: 0 });
+  setStatus("Wyczyszczono.");
   simulate();
 }
 
-document.querySelector("#import-attacker").addEventListener("click", importAttacker);
-document.querySelector("#import-defender").addEventListener("click", importDefender);
-document.querySelector("#import-report").addEventListener("click", importReport);
-document.querySelector("#clear-imports").addEventListener("click", clearImports);
+window.FirepowerBridge = {
+  load({ attackerText = "", defenderText = "", attackerJson = null, defenderJson = null } = {}) {
+    if (attackerJson) attackerImportText.value = JSON.stringify(attackerJson, null, 2);
+    else if (attackerText) attackerImportText.value = attackerText;
+    if (defenderJson) defenderImportText.value = JSON.stringify(defenderJson, null, 2);
+    else if (defenderText) defenderImportText.value = defenderText;
+    loadAttacker();
+    loadDefender();
+    simulate();
+  },
+};
 
+function init() {
+  renderModifierControls("attacker");
+  renderModifierControls("defender");
+  renderManualFleetControls("attacker");
+  renderManualFleetControls("defender");
+  attackerImportText.value = "Okret Wojenny x10\nBryg x20\nStatek Towarowy x20";
+  defenderImportText.value = "Bryg x12\nSlup x24\nStatek Towarowy x10";
+  loadAttacker();
+  loadDefender();
+  simulate();
+}
+
+document.querySelector("#load-attacker").addEventListener("click", () => {
+  loadAttacker();
+  simulate();
+});
+document.querySelector("#load-defender").addEventListener("click", () => {
+  loadDefender();
+  simulate();
+});
+document.querySelector("#import-report").addEventListener("click", loadReport);
+document.querySelector("#clear-imports").addEventListener("click", clearImports);
+attackerImportText.addEventListener("input", () => {
+  manualDirty.attacker = false;
+});
+defenderImportText.addEventListener("input", () => {
+  manualDirty.defender = false;
+});
 form.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (!manualDirty.attacker) loadAttacker();
+  else currentAttackerFleet = getManualFleet("attacker");
+  if (!manualDirty.defender) loadDefender();
+  else currentDefenderFleet = getManualFleet("defender");
   simulate();
 });
 

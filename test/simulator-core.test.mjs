@@ -24,17 +24,61 @@ test("ship catalog contains current alpha ship stats", () => {
   assert.equal(SHIPS.scout.attack, 1);
   assert.equal(SHIPS.brig.cannons, 18);
   assert.equal(SHIPS.warship.hp, 800);
-  assert.equal(SHIPS.colony.cost.rum, 3000);
+  assert.equal(SHIPS.colony.cost.rum, 2000);
   assert.equal(SHIPS.fire.name, "Statek Ogniowy");
   assert.equal(SHIPS.shipOfTheLine.name, "Okret Liniowy");
   assert.equal(SHIPS.shipOfTheLine.attack, 10);
   assert.equal(SHIPS.shipOfTheLine.cannons, 64);
-  assert.equal(SHIPS.shipOfTheLine.cost.metal, 3200);
+  assert.equal(SHIPS.shipOfTheLine.cost.metal, 15000);
 });
 
-test("each cannon fires ten shots per round", () => {
+test("ship catalog uses current build costs", () => {
+  assert.deepEqual(Object.fromEntries(
+    Object.entries(SHIPS).map(([shipId, ship]) => [shipId, ship.cost]),
+  ), {
+    scout: { wood: 2000, metal: 0, rum: 0 },
+    sloop: { wood: 4000, metal: 600, rum: 0 },
+    brig: { wood: 5000, metal: 1200, rum: 0 },
+    cargo: { wood: 4000, metal: 500, rum: 0 },
+    frigate: { wood: 10000, metal: 3000, rum: 0 },
+    warship: { wood: 25000, metal: 8000, rum: 0 },
+    shipOfTheLine: { wood: 44000, metal: 15000, rum: 0 },
+    manOfWar: { wood: 84000, metal: 30000, rum: 0 },
+    bomber: { wood: 15000, metal: 5600, rum: 0 },
+    fire: { wood: 6400, metal: 1800, rum: 0 },
+    colony: { wood: 10000, metal: 5000, rum: 2000 },
+    steamFrigate: { wood: 190000, metal: 84000, rum: 0 },
+    ironclad: { wood: 260000, metal: 140000, rum: 0 },
+    torpedoBoat: { wood: 116000, metal: 48000, rum: 0 },
+  });
+});
+
+test("only colony ship still costs rum to build", () => {
+  const rumCosts = Object.fromEntries(
+    Object.entries(SHIPS).map(([shipId, ship]) => [shipId, ship.cost.rum || 0]),
+  );
+
+  assert.deepEqual(rumCosts, {
+    scout: 0,
+    sloop: 0,
+    brig: 0,
+    cargo: 0,
+    frigate: 0,
+    warship: 0,
+    shipOfTheLine: 0,
+    manOfWar: 0,
+    bomber: 0,
+    fire: 0,
+    colony: 2000,
+    steamFrigate: 0,
+    ironclad: 0,
+    torpedoBoat: 0,
+  });
+});
+
+test("v3 uses one base cannon shot per round", () => {
   const fleet = { brig: 37, cargo: 23, scout: 32, warship: 6 };
-  assert.equal(calculateShots(fleet, { cannonsFlat: 0 }), 10280);
+  assert.equal(calculateShots(fleet, { cannonsFlat: 0 }), 1028);
 });
 
 test("combat modifiers apply to base stats", () => {
@@ -57,12 +101,20 @@ test("json fleet keys normalize to internal ship ids", () => {
     cargoShip: 3,
     fireShip: 2,
     shipOfTheLine: 4,
+    manOfWar: 1,
+    steamFrigate: 2,
+    ironclad: 3,
+    torpedoBoat: 5,
     warship: 1,
   }), {
     scout: 10,
     cargo: 3,
     fire: 2,
     shipOfTheLine: 4,
+    manOfWar: 1,
+    steamFrigate: 2,
+    ironclad: 3,
+    torpedoBoat: 5,
     warship: 1,
   });
 });
@@ -79,22 +131,15 @@ test("compares planned fleet with battle report fleet", () => {
   ]);
 });
 
-test("suppression uses softened firepower ratio with 15 percent minimum", () => {
+test("legacy suppression helper still reports relative firepower", () => {
   const ownFleet = { sloop: 1 };
   const enemyFleet = { warship: 89 };
   const ownModifiers = { weaponsPct: 0, hullsPct: 0, armorPct: 0, cannonsFlat: 0 };
   const enemyModifiers = { weaponsPct: 29, hullsPct: 31, armorPct: 25, cannonsFlat: 6 };
 
-  assert.equal(calculateShots(ownFleet, ownModifiers), 80);
-  assert.equal(calculateEffectiveShots(ownFleet, ownModifiers, enemyFleet, enemyModifiers), 12);
+  assert.equal(calculateShots(ownFleet, ownModifiers), 8);
+  assert.equal(calculateEffectiveShots(ownFleet, ownModifiers, enemyFleet, enemyModifiers), 1);
   assert.equal(calculateFirepower(enemyFleet, enemyModifiers) > calculateFirepower(ownFleet, ownModifiers), true);
-
-  const mediumFleet = { brig: 22, cargo: 22, frigate: 15, sloop: 21, warship: 7 };
-  const strongerFleet = { brig: 50, cargo: 100, frigate: 8, warship: 103 };
-  const mediumModifiers = { weaponsPct: 25, hullsPct: 20, armorPct: 0, cannonsFlat: 0 };
-  const strongerModifiers = { weaponsPct: 29, hullsPct: 31, armorPct: 25, cannonsFlat: 6 };
-
-  assert.equal(calculateEffectiveShots(mediumFleet, mediumModifiers, strongerFleet, strongerModifiers), 3449);
 });
 
 test("parses scan json into defender fleet and modifiers", () => {
@@ -229,10 +274,18 @@ test("parses ship of the line from pasted fleet text", () => {
   const parsed = parseFleetText(`
 Okret Liniowy
 x4
+Man-of-War
+x1
+Fregata Parowa
+x2
+Pancernik
+x3
+Kuter Torpedowy
+x5
 `);
 
   assert.equal(parsed.mode, "single");
-  assert.deepEqual(parsed.all, { shipOfTheLine: 4 });
+  assert.deepEqual(parsed.all, { shipOfTheLine: 4, manOfWar: 1, steamFrigate: 2, ironclad: 3, torpedoBoat: 5 });
 });
 
 test("v02 report-like fight uses suppression and keeps defender losses plausible", () => {
@@ -252,7 +305,7 @@ test("v02 report-like fight uses suppression and keeps defender losses plausible
   });
 
   assert.equal(result.outcomes.attacker, 50);
-  assert.equal(result.averageDefenderLossPoints, 81300);
+  assert.equal(result.averageDefenderLossPoints, 196500);
   assert.equal(result.sample.rounds[0].defender.shots <= calculateShots({ warship: 89 }, { cannonsFlat: 6 }), true);
 });
 
@@ -277,7 +330,7 @@ test("v02 large fight resolves with v02 ship costs and suppression enabled", () 
   assert.equal(result.sample.rounds[0].attacker.shots > 0, true);
 });
 
-test("v02 one-round sweep does not stop attacker fire too early", () => {
+test("v3 one-round sweep exposes base and rapid shots separately", () => {
   const result = runMonteCarlo({
     attackerFleet: { brig: 50, cargo: 100, frigate: 8, warship: 103 },
     defenderFleet: { brig: 22, cargo: 22, frigate: 15, sloop: 21, warship: 7 },
@@ -295,6 +348,7 @@ test("v02 one-round sweep does not stop attacker fire too early", () => {
 
   assert.equal(result.outcomes.attacker, 40);
   assert.equal(result.averageDefenderLossPoints > 280000, true);
-  assert.equal(result.sample.rounds[0].defender.shots > 26000, true);
-  assert.equal(result.averageAttackerLossPoints > 50000, true);
+  assert.equal(result.sample.rounds[0].defender.shots > 3000, true);
+  assert.equal(result.sample.rounds[0].defender.effectiveShots >= result.sample.rounds[0].defender.shots, true);
+  assert.equal(result.sample.rounds[0].defender.rapidExtraShots >= 0, true);
 });
