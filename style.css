@@ -218,6 +218,12 @@ summary {
   gap: 9px;
 }
 
+.profile-status {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 .manual-section {
   grid-column: 1 / -1;
 }
