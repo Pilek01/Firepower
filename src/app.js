@@ -319,12 +319,16 @@ function clearImports() {
 
 window.FirepowerBridge = {
   load({ attackerText = "", defenderText = "", attackerJson = null, defenderJson = null } = {}) {
+    const hasAttacker = Boolean(attackerJson || attackerText);
+    const hasDefender = Boolean(defenderJson || defenderText);
+
     if (attackerJson) attackerImportText.value = JSON.stringify(attackerJson, null, 2);
     else if (attackerText) attackerImportText.value = attackerText;
     if (defenderJson) defenderImportText.value = JSON.stringify(defenderJson, null, 2);
     else if (defenderText) defenderImportText.value = defenderText;
-    loadAttacker();
-    loadDefender();
+
+    if (hasAttacker) loadAttacker();
+    if (hasDefender) loadDefender();
     simulate();
   },
 };
