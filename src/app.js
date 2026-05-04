@@ -13,6 +13,7 @@ const MODIFIERS = [
   ["weaponsPct", "Atak %"],
   ["hullsPct", "HP %"],
   ["armorPct", "Pancerz %"],
+  ["accuracyPct", "Celnosc %"],
   ["cannonsFlat", "Armaty +"],
 ];
 

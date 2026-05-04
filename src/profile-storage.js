@@ -1,6 +1,6 @@
 export const PLAYER_PROFILE_STORAGE_KEY = "firepower.playerProfile.v1";
 
-const PROFILE_FIELDS = ["weaponsPct", "hullsPct", "armorPct", "cannonsFlat"];
+const PROFILE_FIELDS = ["weaponsPct", "hullsPct", "armorPct", "accuracyPct", "cannonsFlat"];
 
 function normalizeModifiers(modifiers = {}) {
   const normalized = {};

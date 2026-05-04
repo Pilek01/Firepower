@@ -183,6 +183,7 @@ const DEFAULT_MODIFIERS = {
   hullsPct: 0,
   armorPct: 0,
   cannonsFlat: 0,
+  accuracyPct: 0,
 };
 
 const DEFAULT_RESEARCH = {
@@ -282,6 +283,7 @@ function modifiersFromResearch(research = {}, talents = {}) {
   const weapons = Number(research.weapons ?? research.armaments ?? 0);
   const hulls = Number(research.hulls ?? 0);
   const armor = Number(research.armor ?? research.fortifications ?? 0);
+  const accuracy = Number(research.fireControl ?? research.accuracy ?? 0);
   const coreAttack = Number(talents.core_attack ?? 0);
   const combatHp = Number(talents.combat_hp ?? 0);
   const combatAbsorb = Number(talents.combat_absorb ?? 0);
@@ -291,6 +293,7 @@ function modifiersFromResearch(research = {}, talents = {}) {
     hullsPct: hulls * 5 + combatHp * 3,
     armorPct: armor * 5 + combatAbsorb * 3,
     cannonsFlat: combatCannon * 2,
+    accuracyPct: accuracy * 5,
   };
 }
 
@@ -545,24 +548,24 @@ const PROFILE_OVERRIDES = {
     damageMultipliers: { escort: 1.12, raider: 1.10, siege: 1.15, capital: 0.85 },
   },
   warship: {
-    targetWeights: { skirmisher: 1.35, escort: 1.25, capital: 1.05, line: 1.0, raider: 0.8, siege: 0.65 },
-    rapidFire: { skirmisher: 0.25, escort: 0.20, line: 0.15 },
-    damageMultipliers: { skirmisher: 1.1, escort: 1.08, capital: 1.05, raider: 0.85 },
+    targetWeights: { skirmisher: 3.2, escort: 2.7, line: 2.2, capital: 1.8, raider: 1.3, siege: 1.1, suicide: 0.9, transport: 0.08, colony: 0.06, scout: 0.05 },
+    rapidFire: { skirmisher: 0.35, escort: 0.30, line: 0.25, raider: 0.15 },
+    damageMultipliers: { skirmisher: 1.08, escort: 1.06, line: 1.05, capital: 1.02, raider: 0.85, transport: 0.65, colony: 0.6, scout: 0.45 },
   },
   shipOfTheLine: {
-    targetWeights: { line: 1.45, skirmisher: 1.25, capital: 1.1, escort: 1.0, siege: 0.85, raider: 0.65 },
-    rapidFire: { line: 0.25, skirmisher: 0.20, escort: 0.15, capital: 0.15 },
-    damageMultipliers: { line: 1.12, skirmisher: 1.08, capital: 1.08, raider: 0.75 },
+    targetWeights: { line: 4.0, skirmisher: 3.4, capital: 3.0, escort: 2.7, siege: 2.0, raider: 1.3, suicide: 1.0, transport: 0.08, colony: 0.06, scout: 0.05 },
+    rapidFire: { line: 0.35, skirmisher: 0.35, escort: 0.30, capital: 0.25, siege: 0.15 },
+    damageMultipliers: { line: 1.08, skirmisher: 1.06, capital: 1.05, escort: 1.04, raider: 0.75, transport: 0.60, colony: 0.55, scout: 0.42 },
   },
   manOfWar: {
-    targetWeights: { capital: 1.45, line: 1.25, skirmisher: 1.0, escort: 0.9, siege: 0.8, raider: 0.65, suicide: 0.55 },
-    rapidFire: { capital: 0.25, line: 0.20, skirmisher: 0.20, escort: 0.15 },
-    damageMultipliers: { capital: 1.2, line: 1.12, escort: 1.05, raider: 0.7, scout: 0.55 },
+    targetWeights: { capital: 4.2, line: 3.8, skirmisher: 3.2, escort: 2.5, siege: 1.9, raider: 1.15, suicide: 0.9, transport: 0.07, colony: 0.05, scout: 0.04 },
+    rapidFire: { capital: 0.35, line: 0.35, skirmisher: 0.35, escort: 0.25, siege: 0.15 },
+    damageMultipliers: { capital: 1.12, line: 1.08, skirmisher: 1.06, escort: 1.03, raider: 0.7, transport: 0.55, colony: 0.50, scout: 0.40 },
   },
   bomber: {
-    targetWeights: { siege: 1.35, capital: 1.25, line: 1.2, transport: 0.7, escort: 0.6, raider: 0.5 },
-    rapidFire: { siege: 0.35, capital: 0.25, line: 0.25 },
-    damageMultipliers: { capital: 1.22, line: 1.18, siege: 1.15, raider: 0.65 },
+    targetWeights: { siege: 3.0, capital: 2.8, line: 2.5, skirmisher: 1.4, escort: 1.2, raider: 0.75, transport: 0.08, colony: 0.06, scout: 0.04 },
+    rapidFire: { siege: 0.35, capital: 0.30, line: 0.30, skirmisher: 0.15 },
+    damageMultipliers: { capital: 1.16, line: 1.12, siege: 1.15, skirmisher: 0.95, raider: 0.65, transport: 0.55 },
     classAccuracyBonuses: { capital: 0.06, line: 0.04 },
   },
   fire: {
@@ -637,6 +640,7 @@ function getHitChance(attacker, attackerStats, targetStats) {
   let chance = 0.55;
   chance += getSizeHitModifier(targetStats.size);
   chance += attacker.accuracyLevel * attacker.accuracyPctPerLevel / 100;
+  chance += attacker.accuracyBonusPct || 0;
   chance += attackerStats.classAccuracyBonuses[targetStats.shipClass] || 0;
   return clamp(chance, 0.20, 0.95);
 }
@@ -689,6 +693,7 @@ function playerFromModifiers(modifiers = {}) {
     attackBonusPct: mods.weaponsPct / 100,
     hullBonusPct: mods.hullsPct / 100,
     absorbBonusPct: mods.armorPct / 100,
+    accuracyBonusPct: mods.accuracyPct / 100,
     cannonBonusFlat: mods.cannonsFlat,
   };
 }
@@ -1030,7 +1035,7 @@ window.FirepowerCore = { SHIPS, DEFAULT_MODIFIERS, compareFleets, parseBattleRep
 
 const PLAYER_PROFILE_STORAGE_KEY = "firepower.playerProfile.v1";
 
-const PROFILE_FIELDS = ["weaponsPct", "hullsPct", "armorPct", "cannonsFlat"];
+const PROFILE_FIELDS = ["weaponsPct", "hullsPct", "armorPct", "accuracyPct", "cannonsFlat"];
 
 function normalizeModifiers(modifiers = {}) {
   const normalized = {};
@@ -1075,6 +1080,7 @@ const MODIFIERS = [
   ["weaponsPct", "Atak %"],
   ["hullsPct", "HP %"],
   ["armorPct", "Pancerz %"],
+  ["accuracyPct", "Celnosc %"],
   ["cannonsFlat", "Armaty +"],
 ];
 

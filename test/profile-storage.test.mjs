@@ -29,6 +29,7 @@ test("player profile persists combat modifiers in local storage", () => {
     weaponsPct: 65,
     hullsPct: 41,
     armorPct: 25,
+    accuracyPct: 40,
     cannonsFlat: 6,
   };
 

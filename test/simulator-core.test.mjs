@@ -151,7 +151,7 @@ test("parses scan json into defender fleet and modifiers", () => {
   const parsed = parseScanJson(JSON.stringify({
     scan: {
       fleet: { cargoShip: 3, warship: 2 },
-      research: { hulls: 4, navigation: 5, sailing: 5, shipBuilding: 4, weapons: 4 },
+      research: { fireControl: 4, hulls: 4, navigation: 5, sailing: 5, shipBuilding: 4, weapons: 4 },
       talents: {},
     },
   }));
@@ -162,7 +162,13 @@ test("parses scan json into defender fleet and modifiers", () => {
     hullsPct: 20,
     armorPct: 0,
     cannonsFlat: 0,
+    accuracyPct: 20,
   });
+});
+
+test("fire control is the only research source for combat accuracy", () => {
+  assert.equal(parseScanJson({ scan: { research: { fireControl: 8, navigation: 9 } } }).modifiers.accuracyPct, 40);
+  assert.equal(parseScanJson({ scan: { research: { navigation: 9 } } }).modifiers.accuracyPct, 0);
 });
 
 test("parses english scan json ship keys into current ship ids", () => {
@@ -418,4 +424,20 @@ test("v3 one-round sweep exposes base and rapid shots separately", () => {
   assert.equal(result.sample.rounds[0].defender.shots > 3000, true);
   assert.equal(result.sample.rounds[0].defender.effectiveShots >= result.sample.rounds[0].defender.shots, true);
   assert.equal(result.sample.rounds[0].defender.rapidExtraShots >= 0, true);
+});
+
+test("heavy line fleets prioritize combat ships before transports", () => {
+  const result = runBattle({
+    attackerFleet: { cargo: 676, frigate: 1, manOfWar: 250, shipOfTheLine: 323, warship: 383 },
+    defenderFleet: { brig: 83, cargo: 153, frigate: 55, dinghy: 51, sloop: 46, warship: 27 },
+    attackerModifiers: { weaponsPct: 65, hullsPct: 44, armorPct: 25, accuracyPct: 40, cannonsFlat: 6 },
+    defenderModifiers: { weaponsPct: 25, hullsPct: 25, armorPct: 20, accuracyPct: 0, cannonsFlat: 0 },
+    settings: { maxRounds: 6 },
+    rng: createRng("target-calibration"),
+  });
+
+  const targets = result.rounds[0].defender.primaryTargets;
+  assert.notEqual(targets.manOfWar, "transport");
+  assert.notEqual(targets.shipOfTheLine, "transport");
+  assert.notEqual(targets.warship, "transport");
 });
