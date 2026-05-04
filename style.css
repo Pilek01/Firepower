@@ -224,6 +224,18 @@ summary {
   font-size: 0.86rem;
 }
 
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.profile-actions button {
+  min-height: 34px;
+  padding: 8px 10px;
+}
+
 .manual-section {
   grid-column: 1 / -1;
 }
