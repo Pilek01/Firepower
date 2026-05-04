@@ -7,6 +7,7 @@ import {
   parseScanJson,
   runMonteCarlo,
 } from "./simulator-core.js";
+import { clearPlayerProfile, loadPlayerProfile, savePlayerProfile } from "./profile-storage.js";
 
 const MODIFIERS = [
   ["weaponsPct", "Atak %"],
@@ -25,6 +26,10 @@ const importStatus = document.querySelector("#import-status");
 const attackerImportText = document.querySelector("#attacker-import-text");
 const defenderImportText = document.querySelector("#defender-import-text");
 const reportImportText = document.querySelector("#report-import-text");
+const playerProfileStatus = document.querySelector("#player-profile-status");
+const savePlayerProfileButton = document.querySelector("#save-player-profile");
+const loadPlayerProfileButton = document.querySelector("#load-player-profile");
+const clearPlayerProfileButton = document.querySelector("#clear-player-profile");
 
 function formatNumber(value, digits = 0) {
   return new Intl.NumberFormat("pl-PL", {
@@ -108,11 +113,45 @@ function getManualFleet(side) {
   return fleet;
 }
 
-function setModifiers(side, modifiers) {
+function setPlayerProfileStatus(message) {
+  if (playerProfileStatus) playerProfileStatus.textContent = message;
+}
+
+function storageSafe() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function persistPlayerProfile() {
+  savePlayerProfile(storageSafe(), getModifiers("attacker"));
+  setPlayerProfileStatus("Profil zapisany.");
+}
+
+function restorePlayerProfile() {
+  const savedProfile = loadPlayerProfile(storageSafe());
+  if (!savedProfile) {
+    setPlayerProfileStatus("Profil zapisze sie automatycznie po zmianie pol.");
+    return false;
+  }
+  setModifiers("attacker", savedProfile);
+  setPlayerProfileStatus("Wczytano zapisany profil gracza.");
+  return true;
+}
+
+function deletePlayerProfile() {
+  clearPlayerProfile(storageSafe());
+  setPlayerProfileStatus("Usunieto zapisany profil.");
+}
+
+function setModifiers(side, modifiers, { persist = false } = {}) {
   const values = { ...DEFAULT_MODIFIERS, ...(modifiers || {}) };
   document.querySelectorAll(`input[data-side="${side}"][data-modifier]`).forEach((input) => {
     input.value = values[input.dataset.modifier] || 0;
   });
+  if (side === "attacker" && persist) persistPlayerProfile();
 }
 
 function getModifiers(side) {
@@ -203,7 +242,7 @@ function renderReportCompare(result) {
 function loadAttacker() {
   const parsed = parseFleetInput(attackerImportText.value);
   currentAttackerFleet = parsed.fleet;
-  if (parsed.modifiers) setModifiers("attacker", parsed.modifiers);
+  if (parsed.modifiers) setModifiers("attacker", parsed.modifiers, { persist: true });
   setManualFleet("attacker", currentAttackerFleet);
   manualDirty.attacker = false;
   setStatus(`Wczytano moja flote: ${fleetCount(currentAttackerFleet)} jednostek.`, "good");
@@ -298,6 +337,7 @@ function init() {
   defenderImportText.value = "Bryg x12\nSlup x24\nStatek Towarowy x10";
   loadAttacker();
   loadDefender();
+  restorePlayerProfile();
   simulate();
 }
 
@@ -317,13 +357,25 @@ attackerImportText.addEventListener("input", () => {
 defenderImportText.addEventListener("input", () => {
   manualDirty.defender = false;
 });
+document.querySelectorAll('input[data-side="attacker"][data-modifier]').forEach((input) => {
+  input.addEventListener("input", persistPlayerProfile);
+  input.addEventListener("change", persistPlayerProfile);
+});
+savePlayerProfileButton?.addEventListener("click", persistPlayerProfile);
+loadPlayerProfileButton?.addEventListener("click", () => {
+  restorePlayerProfile();
+  simulate();
+});
+clearPlayerProfileButton?.addEventListener("click", deletePlayerProfile);
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!manualDirty.attacker) loadAttacker();
   else currentAttackerFleet = getManualFleet("attacker");
   if (!manualDirty.defender) loadDefender();
   else currentDefenderFleet = getManualFleet("defender");
+  persistPlayerProfile();
   simulate();
 });
+window.addEventListener("beforeunload", persistPlayerProfile);
 
 init();

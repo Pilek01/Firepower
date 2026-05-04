@@ -20,26 +20,34 @@ import {
 } from "../src/simulator-core.js";
 
 test("ship catalog contains current alpha ship stats", () => {
-  assert.equal(SHIPS.scout.name, "Lodz Zwiadowcza");
-  assert.equal(SHIPS.scout.attack, 1);
-  assert.equal(SHIPS.brig.cannons, 18);
-  assert.equal(SHIPS.warship.hp, 800);
-  assert.equal(SHIPS.colony.cost.rum, 2000);
-  assert.equal(SHIPS.fire.name, "Statek Ogniowy");
+  assert.equal(SHIPS.dinghy.name, "Szalupa");
+  assert.equal(SHIPS.dinghy.attack, 1.5);
+  assert.equal(SHIPS.scout.name, "Kuter Zwiadowczy");
+  assert.equal(SHIPS.scout.attack, 0);
+  assert.equal(SHIPS.sloop.cannons, 8);
+  assert.equal(SHIPS.brig.cannons, 16);
+  assert.equal(SHIPS.xebec.name, "Szebeka");
+  assert.equal(SHIPS.xebec.cargo, 180);
+  assert.equal(SHIPS.cargo.cannons, 4);
+  assert.equal(SHIPS.warship.hp, 900);
   assert.equal(SHIPS.shipOfTheLine.name, "Okret Liniowy");
-  assert.equal(SHIPS.shipOfTheLine.attack, 10);
-  assert.equal(SHIPS.shipOfTheLine.cannons, 64);
-  assert.equal(SHIPS.shipOfTheLine.cost.metal, 15000);
+  assert.equal(SHIPS.shipOfTheLine.attack, 5.8);
+  assert.equal(SHIPS.bomber.name, "Okret Bombowy");
+  assert.equal(SHIPS.fire.name, "Statek Ogniowy");
+  assert.equal(SHIPS.fire.attack, 22);
+  assert.equal(SHIPS.colony.cost.rum, 2000);
 });
 
 test("ship catalog uses current build costs", () => {
   assert.deepEqual(Object.fromEntries(
     Object.entries(SHIPS).map(([shipId, ship]) => [shipId, ship.cost]),
   ), {
-    scout: { wood: 2000, metal: 0, rum: 0 },
+    dinghy: { wood: 2000, metal: 0, rum: 0 },
+    scout: { wood: 2500, metal: 0, rum: 0 },
     sloop: { wood: 4000, metal: 600, rum: 0 },
     brig: { wood: 5000, metal: 1200, rum: 0 },
-    cargo: { wood: 4000, metal: 500, rum: 0 },
+    xebec: { wood: 7000, metal: 2000, rum: 0 },
+    cargo: { wood: 5000, metal: 500, rum: 0 },
     frigate: { wood: 10000, metal: 3000, rum: 0 },
     warship: { wood: 25000, metal: 8000, rum: 0 },
     shipOfTheLine: { wood: 44000, metal: 15000, rum: 0 },
@@ -47,9 +55,6 @@ test("ship catalog uses current build costs", () => {
     bomber: { wood: 15000, metal: 5600, rum: 0 },
     fire: { wood: 6400, metal: 1800, rum: 0 },
     colony: { wood: 10000, metal: 5000, rum: 2000 },
-    steamFrigate: { wood: 190000, metal: 84000, rum: 0 },
-    ironclad: { wood: 260000, metal: 140000, rum: 0 },
-    torpedoBoat: { wood: 116000, metal: 48000, rum: 0 },
   });
 });
 
@@ -59,9 +64,11 @@ test("only colony ship still costs rum to build", () => {
   );
 
   assert.deepEqual(rumCosts, {
+    dinghy: 0,
     scout: 0,
     sloop: 0,
     brig: 0,
+    xebec: 0,
     cargo: 0,
     frigate: 0,
     warship: 0,
@@ -70,15 +77,12 @@ test("only colony ship still costs rum to build", () => {
     bomber: 0,
     fire: 0,
     colony: 2000,
-    steamFrigate: 0,
-    ironclad: 0,
-    torpedoBoat: 0,
   });
 });
 
 test("v3 uses one base cannon shot per round", () => {
-  const fleet = { brig: 37, cargo: 23, scout: 32, warship: 6 };
-  assert.equal(calculateShots(fleet, { cannonsFlat: 0 }), 1028);
+  const fleet = { brig: 37, cargo: 23, dinghy: 32, scout: 15, warship: 6 };
+  assert.equal(calculateShots(fleet, { cannonsFlat: 0 }), 932);
 });
 
 test("combat modifiers apply to base stats", () => {
@@ -89,32 +93,33 @@ test("combat modifiers apply to base stats", () => {
     cannonsFlat: 6,
   });
 
-  assert.equal(Number(modified.attack.toFixed(2)), 2.32);
-  assert.equal(Number(modified.hp.toFixed(1)), 196.5);
-  assert.equal(Number(modified.shield.toFixed(2)), 31.25);
+  assert.equal(Number(modified.attack.toFixed(2)), 2.06);
+  assert.equal(Number(modified.hp.toFixed(1)), 157.2);
+  assert.equal(Number(modified.shield.toFixed(2)), 15);
   assert.equal(modified.cannons, 14);
 });
 
 test("json fleet keys normalize to internal ship ids", () => {
   assert.deepEqual(normalizeFleetKeys({
-    longboat: 10,
+    dinghy: 10,
+    scoutCutter: 4,
+    longboat: 3,
     cargoShip: 3,
-    fireShip: 2,
-    shipOfTheLine: 4,
     manOfWar: 1,
-    steamFrigate: 2,
-    ironclad: 3,
-    torpedoBoat: 5,
+    shipOfTheLine: 2,
+    bomber: 3,
+    fireShip: 4,
+    xebec: 7,
     warship: 1,
   }), {
-    scout: 10,
+    dinghy: 13,
+    scout: 4,
     cargo: 3,
-    fire: 2,
-    shipOfTheLine: 4,
     manOfWar: 1,
-    steamFrigate: 2,
-    ironclad: 3,
-    torpedoBoat: 5,
+    shipOfTheLine: 2,
+    bomber: 3,
+    fire: 4,
+    xebec: 7,
     warship: 1,
   });
 });
@@ -157,6 +162,64 @@ test("parses scan json into defender fleet and modifiers", () => {
     hullsPct: 20,
     armorPct: 0,
     cannonsFlat: 0,
+  });
+});
+
+test("parses english scan json ship keys into current ship ids", () => {
+  const parsed = parseScanJson({
+    scan: {
+      fleet: {
+        rowboat: 1,
+        patache: 9,
+        scoutCutter: 2,
+        cargo_ship: 3,
+        shipOfLine: 4,
+        manowar: 5,
+        bombShip: 6,
+        fire_ship: 7,
+        colonialShip: 8,
+      },
+    },
+  });
+
+  assert.deepEqual(parsed.fleet, {
+    dinghy: 10,
+    scout: 2,
+    cargo: 3,
+    shipOfTheLine: 4,
+    manOfWar: 5,
+    bomber: 6,
+    fire: 7,
+    colony: 8,
+  });
+});
+
+test("parses current backend scan fleet keys", () => {
+  const parsed = parseScanJson({
+    scan: {
+      fleet: {
+        bombVessel: 2,
+        brig: 6,
+        fireShip: 1,
+        frigate: 1,
+        longboat: 1,
+        patache: 2,
+        sloop: 2,
+        warship: 2,
+        xebec: 1,
+      },
+    },
+  });
+
+  assert.deepEqual(parsed.fleet, {
+    bomber: 2,
+    brig: 6,
+    fire: 1,
+    frigate: 1,
+    dinghy: 3,
+    sloop: 2,
+    warship: 2,
+    xebec: 1,
   });
 });
 
@@ -233,7 +296,7 @@ Stan początkowy
 ×50
 📦 Statek Towarowy
 ×50
-🛶 Łódź Zwiadowcza
+Szalupa
 ×100
 🛶 Slup
 ×10
@@ -252,7 +315,7 @@ Stan początkowy
 `);
 
   assert.equal(parsed.mode, "report");
-  assert.deepEqual(parsed.attacker, { scout: 100, sloop: 10, brig: 50, cargo: 50 });
+  assert.deepEqual(parsed.attacker, { dinghy: 100, sloop: 10, brig: 50, cargo: 50 });
   assert.deepEqual(parsed.defender, { sloop: 91, brig: 18, cargo: 17, frigate: 1 });
 });
 
@@ -270,22 +333,26 @@ x2
   assert.deepEqual(parsed.all, { brig: 12, cargo: 7, warship: 2 });
 });
 
-test("parses ship of the line from pasted fleet text", () => {
+test("parses new raider and scout names from pasted fleet text", () => {
   const parsed = parseFleetText(`
+Szalupa
+x4
+Kuter Zwiadowczy
+x1
+Szebeka
+x2
+Man-of-War
+x3
 Okret Liniowy
 x4
-Man-of-War
-x1
-Fregata Parowa
-x2
-Pancernik
-x3
-Kuter Torpedowy
+Okret Bombowy
 x5
+Statek Ogniowy
+x6
 `);
 
   assert.equal(parsed.mode, "single");
-  assert.deepEqual(parsed.all, { shipOfTheLine: 4, manOfWar: 1, steamFrigate: 2, ironclad: 3, torpedoBoat: 5 });
+  assert.deepEqual(parsed.all, { dinghy: 4, scout: 1, xebec: 2, manOfWar: 3, shipOfTheLine: 4, bomber: 5, fire: 6 });
 });
 
 test("v02 report-like fight uses suppression and keeps defender losses plausible", () => {
@@ -305,7 +372,7 @@ test("v02 report-like fight uses suppression and keeps defender losses plausible
   });
 
   assert.equal(result.outcomes.attacker, 50);
-  assert.equal(result.averageDefenderLossPoints, 196500);
+  assert.equal(result.averageDefenderLossPoints, 199500);
   assert.equal(result.sample.rounds[0].defender.shots <= calculateShots({ warship: 89 }, { cannonsFlat: 6 }), true);
 });
 
