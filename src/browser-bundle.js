@@ -1084,6 +1084,8 @@ const MODIFIERS = [
   ["cannonsFlat", "Armaty +"],
 ];
 
+const BATTLE_INPUT_STORAGE_KEY = "firepower.battleInputs.v1";
+
 let loadedReport = null;
 let currentAttackerFleet = {};
 let currentDefenderFleet = {};
@@ -1191,6 +1193,38 @@ function storageSafe() {
   } catch {
     return null;
   }
+}
+
+function persistBattleInputs() {
+  const storage = storageSafe();
+  if (!storage) return;
+  storage.setItem(BATTLE_INPUT_STORAGE_KEY, JSON.stringify({
+    attackerText: attackerImportText.value,
+    defenderText: defenderImportText.value,
+    reportText: reportImportText.value,
+  }));
+}
+
+function restoreBattleInputs() {
+  const storage = storageSafe();
+  if (!storage) return false;
+
+  try {
+    const saved = JSON.parse(storage.getItem(BATTLE_INPUT_STORAGE_KEY) || "null");
+    if (!saved || typeof saved !== "object") return false;
+
+    attackerImportText.value = typeof saved.attackerText === "string" ? saved.attackerText : "";
+    defenderImportText.value = typeof saved.defenderText === "string" ? saved.defenderText : "";
+    reportImportText.value = typeof saved.reportText === "string" ? saved.reportText : "";
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function clearBattleInputsStorage() {
+  const storage = storageSafe();
+  if (storage) storage.removeItem(BATTLE_INPUT_STORAGE_KEY);
 }
 
 function persistPlayerProfile() {
@@ -1313,6 +1347,7 @@ function loadAttacker() {
   if (parsed.modifiers) setModifiers("attacker", parsed.modifiers, { persist: true });
   setManualFleet("attacker", currentAttackerFleet);
   manualDirty.attacker = false;
+  persistBattleInputs();
   setStatus(`Wczytano moja flote: ${fleetCount(currentAttackerFleet)} jednostek.`, "good");
 }
 
@@ -1322,6 +1357,7 @@ function loadDefender() {
   if (parsed.modifiers) setModifiers("defender", parsed.modifiers);
   setManualFleet("defender", currentDefenderFleet);
   manualDirty.defender = false;
+  persistBattleInputs();
   setStatus(`Wczytano flote wroga: ${fleetCount(currentDefenderFleet)} jednostek.`, "good");
 }
 
@@ -1373,6 +1409,7 @@ function clearImports() {
   attackerImportText.value = "";
   defenderImportText.value = "";
   reportImportText.value = "";
+  clearBattleInputsStorage();
   currentAttackerFleet = {};
   currentDefenderFleet = {};
   setManualFleet("attacker", {});
@@ -1405,10 +1442,9 @@ function init() {
   renderModifierControls("defender");
   renderManualFleetControls("attacker");
   renderManualFleetControls("defender");
-  attackerImportText.value = "Okret Wojenny x10\nBryg x20\nStatek Towarowy x20";
-  defenderImportText.value = "Bryg x12\nSlup x24\nStatek Towarowy x10";
-  loadAttacker();
-  loadDefender();
+  restoreBattleInputs();
+  if (attackerImportText.value.trim()) loadAttacker();
+  if (defenderImportText.value.trim()) loadDefender();
   restorePlayerProfile();
   simulate();
 }
@@ -1425,10 +1461,13 @@ document.querySelector("#import-report").addEventListener("click", loadReport);
 document.querySelector("#clear-imports").addEventListener("click", clearImports);
 attackerImportText.addEventListener("input", () => {
   manualDirty.attacker = false;
+  persistBattleInputs();
 });
 defenderImportText.addEventListener("input", () => {
   manualDirty.defender = false;
+  persistBattleInputs();
 });
+reportImportText.addEventListener("input", persistBattleInputs);
 document.querySelectorAll('input[data-side="attacker"][data-modifier]').forEach((input) => {
   input.addEventListener("input", persistPlayerProfile);
   input.addEventListener("change", persistPlayerProfile);
@@ -1448,6 +1487,9 @@ form.addEventListener("submit", (event) => {
   persistPlayerProfile();
   simulate();
 });
-window.addEventListener("beforeunload", persistPlayerProfile);
+window.addEventListener("beforeunload", () => {
+  persistPlayerProfile();
+  persistBattleInputs();
+});
 
 init();
