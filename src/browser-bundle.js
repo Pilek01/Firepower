@@ -1135,10 +1135,23 @@ function parseFleetInput(text) {
   const json = tryParseJson(source);
   if (json) {
     const scan = parseScanJson(json);
-    return { fleet: scan.fleet, modifiers: scan.modifiers, type: "json" };
+    return {
+      fleet: scan.fleet,
+      modifiers: hasModifierSource(json) ? scan.modifiers : null,
+      type: "json",
+    };
   }
   const parsed = parseFleetText(source);
   return { fleet: parsed.all, modifiers: null, type: "text" };
+}
+
+function hasModifierSource(json) {
+  const scan = json?.scan || json || {};
+  return Boolean(
+    Object.keys(scan.research || {}).length
+    || Object.keys(scan.talents || {}).length
+    || Object.keys(scan.modifiers || {}).length
+  );
 }
 
 function renderModifierControls(side) {
