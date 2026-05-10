@@ -11,7 +11,7 @@ const profileStorage = fs.readFileSync("src/profile-storage.js", "utf8")
 const app = fs.readFileSync("src/app.js", "utf8")
   .replace(
     /import\s*\{[\s\S]*?\}\s*from "\.\/simulator-core\.js";\s*/,
-    "const { SHIPS, DEFAULT_MODIFIERS, compareFleets, parseBattleReportJson, parseFleetText, parseScanJson, runMonteCarlo } = window.FirepowerCore;\n\n",
+    "const { SHIPS, DEFENSES, UNITS, DEFAULT_MODIFIERS, compareFleets, normalizeDefenseKeys, normalizeFleetKeys, parseBattleReportJson, parseFleetText, parseScanJson, runMonteCarlo } = window.FirepowerCore;\n\n",
   )
   .replace(
     /import\s*\{ clearPlayerProfile, loadPlayerProfile, savePlayerProfile \}\s*from "\.\/profile-storage\.js";\s*/,
@@ -21,7 +21,7 @@ const app = fs.readFileSync("src/app.js", "utf8")
 const bundle = `/* Generated from simulator-core.js and app.js so index.html works from file:// */
 (function(){
 ${core}
-window.FirepowerCore = { SHIPS, DEFAULT_MODIFIERS, compareFleets, parseBattleReportJson, parseFleetText, parseScanJson, runMonteCarlo };
+window.FirepowerCore = { SHIPS, DEFENSES, UNITS, DEFAULT_MODIFIERS, compareFleets, normalizeDefenseKeys, normalizeFleetKeys, parseBattleReportJson, parseFleetText, parseScanJson, runMonteCarlo };
 })();
 
 ${profileStorage}

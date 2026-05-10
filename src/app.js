@@ -1,7 +1,11 @@
 import {
+  DEFENSES,
   SHIPS,
+  UNITS,
   DEFAULT_MODIFIERS,
   compareFleets,
+  normalizeDefenseKeys,
+  normalizeFleetKeys,
   parseBattleReportJson,
   parseFleetText,
   parseScanJson,
@@ -22,7 +26,9 @@ const BATTLE_INPUT_STORAGE_KEY = "firepower.battleInputs.v1";
 let loadedReport = null;
 let currentAttackerFleet = {};
 let currentDefenderFleet = {};
+let currentDefenderDefense = {};
 const manualDirty = { attacker: false, defender: false };
+let simulationRunning = false;
 
 const form = document.querySelector("#sim-form");
 const importStatus = document.querySelector("#import-status");
@@ -64,18 +70,24 @@ function fleetCount(fleet) {
 
 function parseFleetInput(text) {
   const source = String(text || "").trim();
-  if (!source) return { fleet: {}, modifiers: null, type: "empty" };
+  if (!source) return { fleet: {}, defense: {}, modifiers: null, type: "empty" };
   const json = tryParseJson(source);
   if (json) {
     const scan = parseScanJson(json);
     return {
       fleet: scan.fleet,
+      defense: scan.defense,
       modifiers: hasModifierSource(json) ? scan.modifiers : null,
       type: "json",
     };
   }
   const parsed = parseFleetText(source);
-  return { fleet: parsed.all, modifiers: null, type: "text" };
+  return {
+    fleet: normalizeFleetKeys(parsed.all),
+    defense: normalizeDefenseKeys(parsed.all),
+    modifiers: null,
+    type: "text",
+  };
 }
 
 function hasModifierSource(json) {
@@ -114,6 +126,24 @@ function renderManualFleetControls(side) {
   }
 }
 
+function renderManualDefenseControls() {
+  const host = document.querySelector("#defender-manual-defense");
+  if (!host) return;
+  host.innerHTML = "";
+  for (const [defenseId, defense] of Object.entries(DEFENSES)) {
+    const row = document.createElement("label");
+    row.className = "manual-ship-row";
+    row.innerHTML = `
+      <span>${defense.name}</span>
+      <input data-side="defender" data-manual-defense="${defenseId}" type="number" min="0" step="1" value="0">
+    `;
+    row.querySelector("input").addEventListener("input", () => {
+      manualDirty.defender = true;
+    });
+    host.append(row);
+  }
+}
+
 function setManualFleet(side, fleet) {
   document.querySelectorAll(`input[data-side="${side}"][data-manual-ship]`).forEach((input) => {
     input.value = fleet[input.dataset.manualShip] || 0;
@@ -127,6 +157,21 @@ function getManualFleet(side) {
     if (count) fleet[input.dataset.manualShip] = count;
   });
   return fleet;
+}
+
+function setManualDefense(defense) {
+  document.querySelectorAll("input[data-manual-defense]").forEach((input) => {
+    input.value = defense[input.dataset.manualDefense] || 0;
+  });
+}
+
+function getManualDefense() {
+  const defense = {};
+  document.querySelectorAll("input[data-manual-defense]").forEach((input) => {
+    const count = Math.max(0, Math.floor(Number(input.value) || 0));
+    if (count) defense[input.dataset.manualDefense] = count;
+  });
+  return defense;
 }
 
 function setPlayerProfileStatus(message) {
@@ -217,10 +262,86 @@ function getSettings() {
   };
 }
 
+function getDefenseRepairRate() {
+  const val = Number(document.querySelector("#defense-repair-rate")?.value) || 0;
+  return Math.min(100, Math.max(0, val)) / 100;
+}
+
+async function runSimulationChunked(params, onProgress) {
+  const totalRuns = params.settings.runs;
+  const chunkSize = Math.max(50, Math.ceil(totalRuns / 20));
+  const acc = {
+    outcomes: { attacker: 0, defender: 0, draw: 0 },
+    attackerLossPoints: 0,
+    defenderLossPoints: 0,
+    defenseLossPoints: 0,
+    debris: { wood: 0, metal: 0, rum: 0 },
+    defenseDebris: { wood: 0, metal: 0, rum: 0 },
+    attackerLosses: {},
+    defenderLosses: {},
+    sample: null,
+    done: 0,
+  };
+  let chunk = 0;
+  while (acc.done < totalRuns) {
+    const batchRuns = Math.min(chunkSize, totalRuns - acc.done);
+    const r = runMonteCarlo({
+      ...params,
+      settings: { ...params.settings, runs: batchRuns },
+      seed: `${params.seed}:c${chunk}`,
+    });
+    acc.outcomes.attacker += r.outcomes.attacker;
+    acc.outcomes.defender += r.outcomes.defender;
+    acc.outcomes.draw += r.outcomes.draw;
+    acc.attackerLossPoints += r.averageAttackerLossPoints * batchRuns;
+    acc.defenderLossPoints += r.averageDefenderLossPoints * batchRuns;
+    acc.defenseLossPoints += (r.averageDefenseLossPoints || 0) * batchRuns;
+    acc.debris.wood += r.averageDebris.wood * batchRuns;
+    acc.debris.metal += r.averageDebris.metal * batchRuns;
+    acc.debris.rum += r.averageDebris.rum * batchRuns;
+    acc.defenseDebris.wood += r.averageDefenseDebris.wood * batchRuns;
+    acc.defenseDebris.metal += r.averageDefenseDebris.metal * batchRuns;
+    acc.defenseDebris.rum += r.averageDefenseDebris.rum * batchRuns;
+    for (const [id, val] of Object.entries(r.averageAttackerLosses)) {
+      acc.attackerLosses[id] = (acc.attackerLosses[id] || 0) + val * batchRuns;
+    }
+    for (const [id, val] of Object.entries(r.averageDefenderLosses)) {
+      acc.defenderLosses[id] = (acc.defenderLosses[id] || 0) + val * batchRuns;
+    }
+    if (!acc.sample) acc.sample = r.sample;
+    acc.done += batchRuns;
+    chunk++;
+    onProgress(acc.done / totalRuns);
+    await new Promise(res => setTimeout(res, 0));
+  }
+  const n = acc.done;
+  const attackerLosses = {};
+  const defenderLosses = {};
+  for (const [id, val] of Object.entries(acc.attackerLosses)) attackerLosses[id] = val / n;
+  for (const [id, val] of Object.entries(acc.defenderLosses)) defenderLosses[id] = val / n;
+  return {
+    runs: n,
+    outcomes: acc.outcomes,
+    outcomeRates: {
+      attacker: acc.outcomes.attacker / n,
+      defender: acc.outcomes.defender / n,
+      draw: acc.outcomes.draw / n,
+    },
+    averageAttackerLosses: attackerLosses,
+    averageDefenderLosses: defenderLosses,
+    averageAttackerLossPoints: acc.attackerLossPoints / n,
+    averageDefenderLossPoints: acc.defenderLossPoints / n,
+    averageDefenseLossPoints: acc.defenseLossPoints / n,
+    averageDebris: { wood: acc.debris.wood / n, metal: acc.debris.metal / n, rum: acc.debris.rum / n },
+    averageDefenseDebris: { wood: acc.defenseDebris.wood / n, metal: acc.defenseDebris.metal / n, rum: acc.defenseDebris.rum / n },
+    sample: acc.sample,
+  };
+}
+
 function renderFleetList(hostId, values) {
   const host = document.querySelector(hostId);
   host.innerHTML = "";
-  for (const [shipId, ship] of Object.entries(SHIPS)) {
+  for (const [shipId, ship] of Object.entries(UNITS)) {
     const value = values[shipId] || 0;
     if (value <= 0.01) continue;
     const item = document.createElement("li");
@@ -235,7 +356,15 @@ function renderFleetList(hostId, values) {
 }
 
 function renderDebris(debris) {
-  document.querySelector("#debris-output").innerHTML = `
+  document.querySelector("#fleet-debris-output").innerHTML = `
+    <span>Drewno ${formatNumber(debris.wood)}</span>
+    <span>Metal ${formatNumber(debris.metal)}</span>
+    <span>Rum ${formatNumber(debris.rum)}</span>
+  `;
+}
+
+function renderDefenseDebris(debris) {
+  document.querySelector("#defense-debris-output").innerHTML = `
     <span>Drewno ${formatNumber(debris.wood)}</span>
     <span>Metal ${formatNumber(debris.metal)}</span>
     <span>Rum ${formatNumber(debris.rum)}</span>
@@ -300,11 +429,13 @@ function loadAttacker() {
 function loadDefender() {
   const parsed = parseFleetInput(defenderImportText.value);
   currentDefenderFleet = parsed.fleet;
+  currentDefenderDefense = parsed.defense;
   if (parsed.modifiers) setModifiers("defender", parsed.modifiers);
   setManualFleet("defender", currentDefenderFleet);
+  setManualDefense(currentDefenderDefense);
   manualDirty.defender = false;
   persistBattleInputs();
-  setStatus(`Wczytano flote wroga: ${fleetCount(currentDefenderFleet)} jednostek.`, "good");
+  setStatus(`Wczytano wroga: ${fleetCount(currentDefenderFleet)} floty, ${fleetCount(currentDefenderDefense)} obrony.`, "good");
 }
 
 function loadReport() {
@@ -326,27 +457,61 @@ function loadReport() {
   }
 }
 
-function simulate() {
+async function simulate() {
+  if (simulationRunning) return;
+  simulationRunning = true;
+
   currentAttackerFleet = getManualFleet("attacker");
   currentDefenderFleet = getManualFleet("defender");
+  currentDefenderDefense = getManualDefense();
   if (!fleetCount(currentAttackerFleet) && attackerImportText.value.trim()) loadAttacker();
-  if (!fleetCount(currentDefenderFleet) && defenderImportText.value.trim()) loadDefender();
-  const result = runMonteCarlo({
-    attackerFleet: currentAttackerFleet,
-    defenderFleet: currentDefenderFleet,
-    attackerModifiers: getModifiers("attacker"),
-    defenderModifiers: getModifiers("defender"),
-    settings: getSettings(),
-    seed: document.querySelector("#seed").value || "firepower",
-  });
+  if (!fleetCount(currentDefenderFleet) && !fleetCount(currentDefenderDefense) && defenderImportText.value.trim()) loadDefender();
+
+  const progressEl = document.querySelector("#sim-progress");
+  const progressBar = document.querySelector("#sim-progress-bar");
+  const progressPct = document.querySelector("#sim-progress-pct");
+  progressEl.hidden = false;
+  progressBar.style.width = "0%";
+  progressPct.textContent = "0%";
+
+  let result;
+  try {
+    result = await runSimulationChunked({
+      attackerFleet: currentAttackerFleet,
+      defenderFleet: currentDefenderFleet,
+      defenderDefense: currentDefenderDefense,
+      attackerModifiers: getModifiers("attacker"),
+      defenderModifiers: getModifiers("defender"),
+      settings: getSettings(),
+      seed: document.querySelector("#seed").value || "firepower",
+    }, (progress) => {
+      const pct = Math.round(progress * 100);
+      progressBar.style.width = `${pct}%`;
+      progressPct.textContent = `${pct}%`;
+    });
+  } finally {
+    progressEl.hidden = true;
+    simulationRunning = false;
+  }
+  const repairRate = getDefenseRepairRate();
+  const repairedDefensePoints = (result.averageDefenseLossPoints || 0) * repairRate;
+  const correctedDefenderLossPoints = result.averageDefenderLossPoints - repairedDefensePoints;
+  const correctedDefenseDebris = {
+    wood: result.averageDefenseDebris.wood * (1 - repairRate),
+    metal: result.averageDefenseDebris.metal * (1 - repairRate),
+    rum: result.averageDefenseDebris.rum * (1 - repairRate),
+  };
+
   document.querySelector("#attacker-rate").textContent = formatPercent(result.outcomeRates.attacker);
   document.querySelector("#defender-rate").textContent = formatPercent(result.outcomeRates.defender);
   document.querySelector("#draw-rate").textContent = formatPercent(result.outcomeRates.draw);
   document.querySelector("#attacker-loss-points").textContent = `${formatNumber(result.averageAttackerLossPoints)} pkt`;
-  document.querySelector("#defender-loss-points").textContent = `${formatNumber(result.averageDefenderLossPoints)} pkt`;
+  document.querySelector("#defender-loss-points").textContent = `${formatNumber(correctedDefenderLossPoints)} pkt`;
+  document.querySelector("#defender-repair-note").textContent = repairRate > 0 ? `−${formatNumber(repairedDefensePoints)} naprawa` : "";
   renderFleetList("#attacker-losses", result.averageAttackerLosses);
   renderFleetList("#defender-losses", result.averageDefenderLosses);
   renderDebris(result.averageDebris);
+  renderDefenseDebris(correctedDefenseDebris);
   renderBattleLog(result.sample);
   renderReportCompare(result);
 }
@@ -358,8 +523,10 @@ function clearImports() {
   clearBattleInputsStorage();
   currentAttackerFleet = {};
   currentDefenderFleet = {};
+  currentDefenderDefense = {};
   setManualFleet("attacker", {});
   setManualFleet("defender", {});
+  setManualDefense({});
   manualDirty.attacker = false;
   manualDirty.defender = false;
   loadedReport = null;
@@ -388,6 +555,7 @@ function init() {
   renderModifierControls("defender");
   renderManualFleetControls("attacker");
   renderManualFleetControls("defender");
+  renderManualDefenseControls();
   restoreBattleInputs();
   if (attackerImportText.value.trim()) loadAttacker();
   if (defenderImportText.value.trim()) loadDefender();

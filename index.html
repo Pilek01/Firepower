@@ -4,9 +4,20 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FIREPOWER V3</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./style.css">
   </head>
   <body>
+    <svg width="0" height="0" style="position:absolute">
+      <filter id="noise">
+        <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+        <feColorMatrix type="saturate" values="0"/>
+        <feBlend in="SourceGraphic" mode="overlay" result="blend"/>
+        <feComposite in="blend" in2="SourceGraphic" operator="in"/>
+      </filter>
+    </svg>
     <main class="app-shell">
       <header class="topbar">
         <div>
@@ -16,6 +27,8 @@
         <p class="version-pill">Combat V3</p>
       </header>
 
+      <div class="topbar-divider"><span>⚓</span></div>
+
       <section class="layout">
         <form id="sim-form" class="panel input-panel" autocomplete="off">
           <div class="paste-grid">
@@ -24,8 +37,8 @@
               <textarea id="attacker-import-text" rows="14" placeholder="Bryg x24&#10;Statek Towarowy x70&#10;Okret Wojenny x71"></textarea>
             </label>
             <label>
-              Flota wroga / skan JSON
-              <textarea id="defender-import-text" rows="14" placeholder="{ &quot;scan&quot;: { &quot;fleet&quot;: { &quot;brig&quot;: 8, &quot;cargoShip&quot;: 55 } } }"></textarea>
+              Flota i obrona wroga / skan JSON
+              <textarea id="defender-import-text" rows="14" placeholder="{ &quot;scan&quot;: { &quot;fleet&quot;: { &quot;brig&quot;: 8 }, &quot;defense&quot;: { &quot;smallCannon&quot;: 20 } } }"></textarea>
             </label>
           </div>
 
@@ -36,6 +49,16 @@
             <button type="button" id="clear-imports" class="ghost-btn">Wyczysc</button>
           </div>
           <p id="import-status" class="status">Gotowe. Wklej tekst floty albo JSON skanu.</p>
+
+          <div id="sim-progress" class="sim-progress" hidden>
+            <div class="sim-progress-label">
+              <span>Symulacja</span>
+              <span id="sim-progress-pct">0%</span>
+            </div>
+            <div class="sim-progress-track">
+              <div id="sim-progress-bar" class="sim-progress-bar"></div>
+            </div>
+          </div>
 
           <details class="advanced">
             <summary>Ustawienia</summary>
@@ -65,14 +88,19 @@
                     <h3>Flota wroga</h3>
                     <div id="defender-manual-fleet" class="manual-fleet"></div>
                   </div>
+                  <div>
+                    <h3>Obrona wroga</h3>
+                    <div id="defender-manual-defense" class="manual-fleet"></div>
+                  </div>
                 </div>
               </section>
               <section>
                 <h2>Symulacja</h2>
                 <div class="settings-grid">
-                  <label>Proby <input id="runs" type="number" min="1" max="3000" step="1" value="300"></label>
+                  <label>Proby <input id="runs" type="number" min="100" max="50000" step="100" value="5000"></label>
                   <label>Rundy <input id="max-rounds" type="number" min="1" max="12" step="1" value="6"></label>
                   <label>Seed <input id="seed" type="text" value="firepower"></label>
+                  <label>Repair obrony % <input id="defense-repair-rate" type="number" min="0" max="100" step="5" value="70"></label>
                 </div>
               </section>
               <section>
@@ -102,6 +130,7 @@
               <div>
                 <h3>Obronca</h3>
                 <p id="defender-loss-points">- pkt</p>
+                <p id="defender-repair-note" class="repair-note"></p>
                 <ul id="defender-losses"></ul>
               </div>
             </div>
@@ -109,7 +138,10 @@
 
           <section class="summary-card">
             <h2>Zlomowisko</h2>
-            <div id="debris-output" class="resource-row"></div>
+            <h3>Flota</h3>
+            <div id="fleet-debris-output" class="resource-row"></div>
+            <h3>Obrona</h3>
+            <div id="defense-debris-output" class="resource-row"></div>
           </section>
 
           <details class="debug-card">
@@ -121,6 +153,6 @@
       </section>
     </main>
 
-    <script src="./src/browser-bundle.js?v=2026-05-04-profile-fix" defer></script>
+    <script src="./src/browser-bundle.js?v=2026-05-09-defense" defer></script>
   </body>
 </html>

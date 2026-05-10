@@ -3,14 +3,18 @@ import assert from "node:assert/strict";
 
 import {
   DEBRIS_RATE,
+  DEFENSES,
+  DEFENSE_DEBRIS_DESTRUCTIBLE_RATE,
   SHIPS,
   applyResearch,
   applyCombatModifiers,
   calculateShots,
   calculateFirepower,
   calculateEffectiveShots,
+  calculateDefenseDebris,
   compareFleets,
   createRng,
+  normalizeDefenseKeys,
   normalizeFleetKeys,
   parseBattleReportJson,
   parseFleetText,
@@ -18,6 +22,73 @@ import {
   runBattle,
   runMonteCarlo,
 } from "../src/simulator-core.js";
+
+test("catalog contains current May ship and defense stats", () => {
+  assert.equal(SHIPS.sloop.attack, 1.7);
+  assert.equal(SHIPS.sloop.cost.wood, 3000);
+  assert.equal(SHIPS.brig.hp, 250);
+  assert.equal(SHIPS.frigate.cost.wood, 12000);
+  assert.equal(SHIPS.manOfWar.attack, 7.8);
+  assert.equal(SHIPS.manOfWar.cost.metal, 25000);
+  assert.equal(SHIPS.indiaman.name, "Indiaman");
+  assert.equal(SHIPS.indiaman.cargo, 50000);
+
+  assert.equal(DEFENSES.smallCannon.name, "Male Dzialo");
+  assert.equal(DEFENSES.smallCannon.attack, 9.2);
+  assert.equal(DEFENSES.grandSeaCitadel.cost.rum, 5000000);
+  assert.equal(DEFENSE_DEBRIS_DESTRUCTIBLE_RATE, 0.30);
+});
+
+test("parses defense keys and calculates capped defense debris", () => {
+  assert.deepEqual(normalizeDefenseKeys({
+    smallCannon: 10,
+    coastalGun: 5,
+    blackFortress: 1,
+    grandSeaCitadel: 1,
+  }), {
+    smallCannon: 10,
+    coastalGun: 5,
+    blackFortress: 1,
+    grandSeaCitadel: 1,
+  });
+
+  assert.deepEqual(calculateDefenseDebris({
+    smallCannon: 10,
+    coastalGun: 5,
+  }), {
+    wood: 607,
+    metal: 3600,
+    rum: 0,
+  });
+});
+
+test("scan json imports defender fleet and defense separately", () => {
+  const parsed = parseScanJson({
+    scan: {
+      fleet: { sloop: 2, indiaman: 1 },
+      defense: { smallCannon: 10, coastalGun: 5 },
+    },
+  });
+
+  assert.deepEqual(parsed.fleet, { sloop: 2, indiaman: 1 });
+  assert.deepEqual(parsed.defense, { smallCannon: 10, coastalGun: 5 });
+});
+
+test("battle simulation includes defender defense and reports separate defense debris", () => {
+  const battle = runBattle({
+    attackerFleet: { bomber: 20, warship: 10 },
+    defenderFleet: {},
+    defenderDefense: { smallCannon: 20, coastalGun: 10 },
+    attackerModifiers: { weaponsPct: 65, hullsPct: 44, armorPct: 25, accuracyPct: 40, cannonsFlat: 6 },
+    defenderModifiers: { weaponsPct: 25, hullsPct: 25, armorPct: 20, accuracyPct: 25, cannonsFlat: 6 },
+    settings: { maxRounds: 6 },
+    rng: createRng("defense-test"),
+  });
+
+  assert.equal(battle.defender.startDefense, 30);
+  assert.equal(battle.defender.defenseDebris.wood >= 0, true);
+  assert.equal(battle.debris.wood >= battle.defender.defenseDebris.wood, true);
+});
 
 test("ship catalog contains current alpha ship stats", () => {
   assert.equal(SHIPS.dinghy.name, "Szalupa");
@@ -31,7 +102,7 @@ test("ship catalog contains current alpha ship stats", () => {
   assert.equal(SHIPS.cargo.cannons, 4);
   assert.equal(SHIPS.warship.hp, 900);
   assert.equal(SHIPS.shipOfTheLine.name, "Okret Liniowy");
-  assert.equal(SHIPS.shipOfTheLine.attack, 5.8);
+  assert.equal(SHIPS.shipOfTheLine.attack, 5.9);
   assert.equal(SHIPS.bomber.name, "Okret Bombowy");
   assert.equal(SHIPS.fire.name, "Statek Ogniowy");
   assert.equal(SHIPS.fire.attack, 22);
@@ -44,14 +115,15 @@ test("ship catalog uses current build costs", () => {
   ), {
     dinghy: { wood: 2000, metal: 0, rum: 0 },
     scout: { wood: 2500, metal: 0, rum: 0 },
-    sloop: { wood: 4000, metal: 600, rum: 0 },
-    brig: { wood: 5000, metal: 1200, rum: 0 },
+    sloop: { wood: 3000, metal: 500, rum: 0 },
+    brig: { wood: 6000, metal: 1500, rum: 0 },
     xebec: { wood: 7000, metal: 2000, rum: 0 },
     cargo: { wood: 5000, metal: 500, rum: 0 },
-    frigate: { wood: 10000, metal: 3000, rum: 0 },
+    indiaman: { wood: 20000, metal: 1500, rum: 0 },
+    frigate: { wood: 12000, metal: 3100, rum: 0 },
     warship: { wood: 25000, metal: 8000, rum: 0 },
     shipOfTheLine: { wood: 44000, metal: 15000, rum: 0 },
-    manOfWar: { wood: 84000, metal: 30000, rum: 0 },
+    manOfWar: { wood: 85000, metal: 25000, rum: 0 },
     bomber: { wood: 15000, metal: 5600, rum: 0 },
     fire: { wood: 6400, metal: 1800, rum: 0 },
     colony: { wood: 10000, metal: 5000, rum: 2000 },
@@ -70,6 +142,7 @@ test("only colony ship still costs rum to build", () => {
     brig: 0,
     xebec: 0,
     cargo: 0,
+    indiaman: 0,
     frigate: 0,
     warship: 0,
     shipOfTheLine: 0,
@@ -93,9 +166,9 @@ test("combat modifiers apply to base stats", () => {
     cannonsFlat: 6,
   });
 
-  assert.equal(Number(modified.attack.toFixed(2)), 2.06);
-  assert.equal(Number(modified.hp.toFixed(1)), 157.2);
-  assert.equal(Number(modified.shield.toFixed(2)), 15);
+  assert.equal(Number(modified.attack.toFixed(2)), 2.19);
+  assert.equal(Number(modified.hp.toFixed(1)), 183.4);
+  assert.equal(Number(modified.shield.toFixed(2)), 17.5);
   assert.equal(modified.cannons, 14);
 });
 
@@ -378,7 +451,7 @@ test("v02 report-like fight uses suppression and keeps defender losses plausible
   });
 
   assert.equal(result.outcomes.attacker, 50);
-  assert.equal(result.averageDefenderLossPoints, 199500);
+  assert.equal(result.averageDefenderLossPoints, 217600);
   assert.equal(result.sample.rounds[0].defender.shots <= calculateShots({ warship: 89 }, { cannonsFlat: 6 }), true);
 });
 

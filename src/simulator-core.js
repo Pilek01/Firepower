@@ -3,6 +3,7 @@ export const SUPPRESSION_MIN = 0.15;
 export const DEBRIS_RATE = 0.55;
 export const WRECK_WOOD_RATE = 0.45;
 export const WRECK_METAL_RATE = 0.60;
+export const DEFENSE_DEBRIS_DESTRUCTIBLE_RATE = 0.30;
 
 export const SHIPS = {
   dinghy: {
@@ -34,28 +35,28 @@ export const SHIPS = {
   sloop: {
     jsonKey: "sloop",
     name: "Slup",
-    attack: 1.6,
-    hp: 120,
-    shield: 12,
+    attack: 1.7,
+    hp: 140,
+    shield: 14,
     size: 0.75,
     cannons: 8,
     speed: 1.65,
     cargo: 80,
     crew: 18,
-    cost: { wood: 4000, metal: 600, rum: 0 },
+    cost: { wood: 3000, metal: 500, rum: 0 },
   },
   brig: {
     jsonKey: "brig",
     name: "Bryg",
     attack: 2.4,
-    hp: 300,
-    shield: 45,
+    hp: 250,
+    shield: 30,
     size: 1,
     cannons: 16,
     speed: 1.25,
     cargo: 120,
     crew: 45,
-    cost: { wood: 5000, metal: 1200, rum: 0 },
+    cost: { wood: 6000, metal: 1500, rum: 0 },
   },
   xebec: {
     jsonKey: "xebec",
@@ -83,18 +84,31 @@ export const SHIPS = {
     crew: 22,
     cost: { wood: 5000, metal: 500, rum: 0 },
   },
+  indiaman: {
+    jsonKey: "indiaman",
+    name: "Indiaman",
+    attack: 0.8,
+    hp: 600,
+    shield: 40,
+    size: 2,
+    cannons: 8,
+    speed: 0.7,
+    cargo: 50000,
+    crew: 70,
+    cost: { wood: 20000, metal: 1500, rum: 0 },
+  },
   frigate: {
     jsonKey: "frigate",
     name: "Fregata",
-    attack: 4.2,
-    hp: 420,
-    shield: 55,
+    attack: 4,
+    hp: 400,
+    shield: 50,
     size: 1.1,
     cannons: 28,
     speed: 1.25,
     cargo: 160,
     crew: 70,
-    cost: { wood: 10000, metal: 3000, rum: 0 },
+    cost: { wood: 12000, metal: 3100, rum: 0 },
   },
   warship: {
     jsonKey: "warship",
@@ -112,8 +126,8 @@ export const SHIPS = {
   shipOfTheLine: {
     jsonKey: "shipOfTheLine",
     name: "Okret Liniowy",
-    attack: 5.8,
-    hp: 1250,
+    attack: 5.9,
+    hp: 1300,
     shield: 190,
     size: 1.55,
     cannons: 64,
@@ -125,15 +139,15 @@ export const SHIPS = {
   manOfWar: {
     jsonKey: "manOfWar",
     name: "Man-of-War",
-    attack: 6.8,
-    hp: 1900,
-    shield: 280,
+    attack: 7.8,
+    hp: 2100,
+    shield: 300,
     size: 1.9,
     cannons: 90,
     speed: 0.65,
     cargo: 120,
     crew: 180,
-    cost: { wood: 84000, metal: 30000, rum: 0 },
+    cost: { wood: 85000, metal: 25000, rum: 0 },
   },
   bomber: {
     jsonKey: "bomber",
@@ -176,6 +190,101 @@ export const SHIPS = {
   },
 };
 
+export const DEFENSES = {
+  smallCannon: {
+    jsonKey: "smallCannon",
+    name: "Male Dzialo",
+    attack: 9.2,
+    hp: 20,
+    shield: 3,
+    size: 0.1,
+    cannons: 1,
+    cost: { wood: 200, metal: 1000, rum: 0 },
+  },
+  coastalGun: {
+    jsonKey: "coastalGun",
+    name: "Dzialo Nadbrzezne",
+    attack: 12.8,
+    hp: 80,
+    shield: 12,
+    size: 0.2,
+    cannons: 1,
+    cost: { wood: 500, metal: 2000, rum: 0 },
+  },
+  heavyCannon: {
+    jsonKey: "heavyCannon",
+    name: "Ciezkie Dzialo",
+    attack: 22.2,
+    hp: 200,
+    shield: 25,
+    size: 0.3,
+    cannons: 1,
+    cost: { wood: 1000, metal: 4000, rum: 0 },
+  },
+  heatedShotBattery: {
+    jsonKey: "heatedShotBattery",
+    name: "Bateria Rozgrzanych Kul",
+    attack: 20,
+    hp: 200,
+    shield: 20,
+    size: 0.3,
+    cannons: 2,
+    cost: { wood: 1500, metal: 5000, rum: 0 },
+  },
+  bombard: {
+    jsonKey: "bombard",
+    name: "Bombarda",
+    attack: 70,
+    hp: 250,
+    shield: 30,
+    size: 0.6,
+    cannons: 1,
+    cost: { wood: 2000, metal: 6500, rum: 0 },
+  },
+  gunTower: {
+    jsonKey: "gunTower",
+    name: "Wieza Dzialowa",
+    attack: 14,
+    hp: 850,
+    shield: 70,
+    size: 2.4,
+    cannons: 8,
+    cost: { wood: 5000, metal: 8000, rum: 0 },
+  },
+  seaFort: {
+    jsonKey: "seaFort",
+    name: "Fort Morski",
+    attack: 5.8,
+    hp: 1900,
+    shield: 100,
+    size: 4,
+    cannons: 24,
+    cost: { wood: 10000, metal: 12000, rum: 0 },
+  },
+  blackFortress: {
+    jsonKey: "blackFortress",
+    name: "Czarna Forteca",
+    attack: 16,
+    hp: 6000,
+    shield: 180,
+    size: 7,
+    cannons: 60,
+    cost: { wood: 40000, metal: 60000, rum: 0 },
+  },
+  grandSeaCitadel: {
+    jsonKey: "grandSeaCitadel",
+    name: "Wielka Cytadela Morska",
+    attack: 125,
+    hp: 300000,
+    shield: 3000,
+    size: 30,
+    cannons: 500,
+    cost: { wood: 10000000, metal: 15000000, rum: 5000000 },
+  },
+};
+
+export const UNITS = { ...SHIPS, ...DEFENSES };
+
 export const DEFAULT_MODIFIERS = {
   weaponsPct: 0,
   hullsPct: 0,
@@ -207,6 +316,7 @@ export const DEFAULT_SETTINGS = {
 
 const JSON_TO_INTERNAL = {
   ...Object.fromEntries(Object.entries(SHIPS).map(([id, ship]) => [ship.jsonKey, id])),
+  ...Object.fromEntries(Object.entries(DEFENSES).map(([id, defense]) => [defense.jsonKey, id])),
   longboat: "dinghy",
 };
 
@@ -217,6 +327,7 @@ const JSON_KEY_ALIASES = {
   brig: ["brig"],
   xebec: ["xebec", "zebec", "xebecShip"],
   cargo: ["cargoShip", "cargo", "cargo_ship", "transport", "transportShip", "merchantShip"],
+  indiaman: ["indiaman", "indiaMan", "eastIndiaman"],
   frigate: ["frigate"],
   warship: ["warship", "warShip", "battleShip"],
   shipOfTheLine: ["shipOfTheLine", "shipOfLine", "lineShip", "lineOfBattleShip"],
@@ -224,6 +335,15 @@ const JSON_KEY_ALIASES = {
   bomber: ["bomber", "bombShip", "bombardShip", "bombVessel"],
   fire: ["fireShip", "fire_ship", "fireship"],
   colony: ["colonyShip", "colonialShip", "colony", "colonizer"],
+  smallCannon: ["smallCannon", "lightCannon", "smallGun"],
+  coastalGun: ["coastalGun", "shoreGun", "coastCannon"],
+  heavyCannon: ["heavyCannon", "heavyGun"],
+  heatedShotBattery: ["heatedShotBattery", "hotShotBattery", "heatedBattery"],
+  bombard: ["bombard", "bombarda"],
+  gunTower: ["gunTower", "cannonTower"],
+  seaFort: ["seaFort", "seaFortress"],
+  blackFortress: ["blackFortress", "blackFort"],
+  grandSeaCitadel: ["grandSeaCitadel", "greatSeaCitadel", "seaCitadel"],
 };
 
 function normalizeJsonKey(key) {
@@ -241,6 +361,7 @@ const SHIP_ALIASES = {
   brig: ["bryg", "brig"],
   xebec: ["szebeka", "xebec"],
   cargo: ["statek towarowy", "towarowy", "cargo", "cargoship"],
+  indiaman: ["indiaman"],
   frigate: ["fregata", "frigate"],
   warship: ["okret wojenny", "warship"],
   shipOfTheLine: ["okret liniowy", "liniowy", "ship of the line", "shipoftheline"],
@@ -248,6 +369,15 @@ const SHIP_ALIASES = {
   bomber: ["okret bombowy", "bombowy", "bomber"],
   fire: ["statek ogniowy", "ogniowy", "fireship"],
   colony: ["statek kolonialny", "colony"],
+  smallCannon: ["male dzialo", "maly dzialo", "small cannon"],
+  coastalGun: ["dzialo nadbrzezne", "coastal gun"],
+  heavyCannon: ["ciezkie dzialo", "heavy cannon"],
+  heatedShotBattery: ["bateria rozgrzanych kul", "heated shot battery"],
+  bombard: ["bombarda", "bombard"],
+  gunTower: ["wieza dzialowa", "gun tower"],
+  seaFort: ["fort morski", "sea fort"],
+  blackFortress: ["czarna forteca", "black fortress"],
+  grandSeaCitadel: ["wielka cytadela morska", "grand sea citadel"],
 };
 
 export function createRng(seed = "firepower") {
@@ -310,15 +440,27 @@ export function applyCombatModifiers(ship, modifiers = {}) {
   };
 }
 
-export function normalizeFleetKeys(fleet = {}) {
+function normalizeUnitKeys(units = {}, catalog = UNITS) {
   const normalized = {};
-  for (const [key, value] of Object.entries(fleet || {})) {
-    const shipId = SHIPS[key] ? key : JSON_TO_INTERNAL[key] || NORMALIZED_JSON_TO_INTERNAL[normalizeJsonKey(key)];
-    if (!shipId) continue;
+  for (const [key, value] of Object.entries(units || {})) {
+    const shipId = catalog[key] ? key : JSON_TO_INTERNAL[key] || NORMALIZED_JSON_TO_INTERNAL[normalizeJsonKey(key)];
+    if (!shipId || !catalog[shipId]) continue;
     const count = Math.max(0, Math.floor(Number(value) || 0));
     if (count) normalized[shipId] = (normalized[shipId] || 0) + count;
   }
   return normalized;
+}
+
+export function normalizeFleetKeys(fleet = {}) {
+  return normalizeUnitKeys(fleet, SHIPS);
+}
+
+export function normalizeDefenseKeys(defense = {}) {
+  return normalizeUnitKeys(defense, DEFENSES);
+}
+
+function normalizeBattleUnitKeys(units = {}) {
+  return normalizeUnitKeys(units, UNITS);
 }
 
 export function compareFleets(expectedFleet = {}, actualFleet = {}) {
@@ -373,9 +515,17 @@ export function calculateEffectiveShots(ownFleet, ownModifiers, enemyFleet, enem
 }
 
 export function calculateFleetCost(fleet = {}) {
+  return calculateUnitCost(fleet, SHIPS);
+}
+
+export function calculateDefenseCost(defense = {}) {
+  return calculateUnitCost(defense, DEFENSES);
+}
+
+function calculateUnitCost(units = {}, catalog = UNITS) {
   const total = { wood: 0, metal: 0, rum: 0, points: 0 };
-  for (const [shipId, count] of Object.entries(normalizeFleetKeys(fleet))) {
-    const ship = SHIPS[shipId];
+  for (const [shipId, count] of Object.entries(normalizeUnitKeys(units, catalog))) {
+    const ship = catalog[shipId];
     if (!ship) continue;
     total.wood += ship.cost.wood * count;
     total.metal += ship.cost.metal * count;
@@ -383,6 +533,23 @@ export function calculateFleetCost(fleet = {}) {
   }
   total.points = total.wood + total.metal + total.rum;
   return total;
+}
+
+export function calculateDefenseDebris(defense = {}) {
+  return calculateDebrisFromLosses(normalizeDefenseKeys(defense), DEFENSES, DEFENSE_DEBRIS_DESTRUCTIBLE_RATE);
+}
+
+function calculateDebrisFromLosses(losses = {}, catalog = UNITS, capRate = 1) {
+  const debris = { wood: 0, metal: 0, rum: 0 };
+  for (const [unitId, lostRaw] of Object.entries(normalizeUnitKeys(losses, catalog))) {
+    const unit = catalog[unitId];
+    const lost = Math.max(0, lostRaw) * capRate;
+    if (!unit || lost <= 0) continue;
+    debris.wood += Math.floor(Math.max(0, unit.cost.wood) * lost * WRECK_WOOD_RATE);
+    debris.metal += Math.floor(Math.max(0, unit.cost.metal) * lost * WRECK_METAL_RATE);
+    debris.rum += 0;
+  }
+  return debris;
 }
 
 function normalizeText(value) {
@@ -448,7 +615,7 @@ export function parseScanJson(text) {
   return {
     type: "scan",
     fleet: normalizeFleetKeys(scan.fleet || {}),
-    defense: scan.defense || {},
+    defense: normalizeDefenseKeys(scan.defense || {}),
     resources: scan.resources || {},
     research: scan.research || {},
     talents: scan.talents || {},
@@ -462,6 +629,7 @@ export function parseBattleReportJson(text) {
     type: "battleReport",
     attackerFleet: normalizeFleetKeys(json.forces?.initial?.aggressorFleet || {}),
     defenderFleet: normalizeFleetKeys(json.forces?.initial?.defenderFleet || {}),
+    defenderDefense: normalizeDefenseKeys(json.forces?.initial?.defenderDefense || {}),
     attackerModifiers: normalizeModifiers(json.modifiers?.aggressor || {}),
     defenderModifiers: normalizeModifiers(json.modifiers?.defender || {}),
     summary: json.battleSummary || {},
@@ -469,18 +637,26 @@ export function parseBattleReportJson(text) {
   };
 }
 
-function countFleet(fleet = {}) {
-  return Object.values(normalizeFleetKeys(fleet)).reduce((sum, count) => sum + count, 0);
+function countUnits(units = {}, catalog = UNITS) {
+  return Object.values(normalizeUnitKeys(units, catalog)).reduce((sum, count) => sum + count, 0);
 }
 
-function diffFleet(start = {}, survivors = {}) {
+function countFleet(fleet = {}) {
+  return countUnits(fleet, SHIPS);
+}
+
+function diffUnits(start = {}, survivors = {}, catalog = UNITS) {
   const losses = {};
-  const safeStart = normalizeFleetKeys(start);
-  for (const shipId of Object.keys(SHIPS)) {
+  const safeStart = normalizeUnitKeys(start, catalog);
+  for (const shipId of Object.keys(catalog)) {
     const lost = Math.max(0, (safeStart[shipId] || 0) - (survivors[shipId] || 0));
     if (lost) losses[shipId] = lost;
   }
   return losses;
+}
+
+function diffFleet(start = {}, survivors = {}) {
+  return diffUnits(start, survivors, SHIPS);
 }
 
 function resolveModifiers({ modifiers, research, settings, side }) {
@@ -499,6 +675,7 @@ const SHIP_CLASSES = {
   brig: "escort",
   xebec: "raider",
   cargo: "transport",
+  indiaman: "transport",
   frigate: "skirmisher",
   warship: "line",
   shipOfTheLine: "line",
@@ -506,6 +683,15 @@ const SHIP_CLASSES = {
   bomber: "siege",
   fire: "suicide",
   colony: "colony",
+  smallCannon: "defense_light",
+  coastalGun: "defense_light",
+  heavyCannon: "defense_medium",
+  heatedShotBattery: "defense_medium",
+  bombard: "defense_heavy",
+  gunTower: "defense_medium",
+  seaFort: "defense_heavy",
+  blackFortress: "defense_heavy",
+  grandSeaCitadel: "capital_super",
 };
 
 const PROFILE_OVERRIDES = {
@@ -521,6 +707,12 @@ const PROFILE_OVERRIDES = {
     targetWeights: { raider: 1.6, scout: 1.3, suicide: 1.1, transport: 0.9, escort: 0.7, skirmisher: 0.6, capital: 0.45, line: 0.45 },
     defaultTargetWeight: 0.45,
     defaultDamageMultiplier: 0.60,
+  },
+  indiaman: {
+    combatCapable: false,
+    targetWeights: { raider: 1.6, scout: 1.2, transport: 0.9 },
+    defaultTargetWeight: 0.45,
+    defaultDamageMultiplier: 0.55,
   },
   colony: { combatCapable: false, defaultTargetWeight: 0.35, defaultDamageMultiplier: 0.50 },
   sloop: {
@@ -561,20 +753,66 @@ const PROFILE_OVERRIDES = {
     damageMultipliers: { capital: 1.12, line: 1.08, skirmisher: 1.06, escort: 1.03, raider: 0.7, transport: 0.55, colony: 0.50, scout: 0.40 },
   },
   bomber: {
-    targetWeights: { siege: 3.0, capital: 2.8, line: 2.5, skirmisher: 1.4, escort: 1.2, raider: 0.75, transport: 0.08, colony: 0.06, scout: 0.04 },
-    rapidFire: { siege: 0.35, capital: 0.30, line: 0.30, skirmisher: 0.15 },
-    damageMultipliers: { capital: 1.16, line: 1.12, siege: 1.15, skirmisher: 0.95, raider: 0.65, transport: 0.55 },
-    classAccuracyBonuses: { capital: 0.06, line: 0.04 },
+    targetWeights: { defense_heavy: 4.0, defense_medium: 3.6, defense_light: 3.2, capital_super: 4.5, siege: 3.0, capital: 2.8, line: 2.5, skirmisher: 1.4, escort: 1.2, raider: 0.75, transport: 0.08, colony: 0.06, scout: 0.04 },
+    rapidFire: { defense_heavy: 0.40, defense_medium: 0.35, defense_light: 0.30, capital_super: 0.50, siege: 0.35, capital: 0.30, line: 0.30, skirmisher: 0.15 },
+    damageMultipliers: { capital_super: 1.3, defense_heavy: 1.25, defense_medium: 1.20, defense_light: 1.15, capital: 1.16, line: 1.12, siege: 1.15, skirmisher: 0.95, raider: 0.65, transport: 0.55 },
+    classAccuracyBonuses: { capital_super: 0.08, defense_heavy: 0.06, defense_medium: 0.04, capital: 0.06, line: 0.04 },
   },
   fire: {
     targetWeights: { capital: 1.8, line: 1.55, siege: 1.2, skirmisher: 0.65, escort: 0.55, raider: 0.45 },
     rapidFire: { capital: 0.35, line: 0.30, siege: 0.25 },
     damageMultipliers: { capital: 1.45, line: 1.35, siege: 1.25, skirmisher: 0.85, raider: 0.65, scout: 0.45 },
   },
+  smallCannon: {
+    targetWeights: { scout: 2.2, raider: 1.6, transport: 1.2, suicide: 0.9, escort: 0.7 },
+    rapidFire: { scout: 0.80, raider: 0.35, transport: 0.20 },
+    damageMultipliers: { scout: 1.25, raider: 1.1, capital: 0.45, line: 0.55 },
+  },
+  coastalGun: {
+    targetWeights: { raider: 2.0, escort: 1.4, transport: 1.2, scout: 1.0, skirmisher: 0.9, line: 0.55, capital: 0.45 },
+    rapidFire: { raider: 0.45, transport: 0.25, escort: 0.20 },
+    damageMultipliers: { raider: 1.15, escort: 1.05, line: 0.7, capital: 0.55 },
+  },
+  heavyCannon: {
+    targetWeights: { escort: 1.8, skirmisher: 1.5, line: 1.3, raider: 1.0, siege: 0.9, capital: 0.75 },
+    rapidFire: { escort: 0.35, skirmisher: 0.30, line: 0.20 },
+    damageMultipliers: { escort: 1.15, skirmisher: 1.1, line: 1.0, capital: 0.8 },
+  },
+  heatedShotBattery: {
+    targetWeights: { line: 2.0, capital: 1.8, skirmisher: 1.4, escort: 1.1, siege: 1.0 },
+    rapidFire: { line: 0.35, capital: 0.30, skirmisher: 0.25 },
+    damageMultipliers: { line: 1.15, capital: 1.12, skirmisher: 1.05 },
+  },
+  bombard: {
+    targetWeights: { capital: 2.2, line: 2.0, siege: 1.6, skirmisher: 1.2, escort: 0.9, transport: 0.5 },
+    rapidFire: { capital: 0.35, line: 0.30, siege: 0.25, skirmisher: 0.20 },
+    damageMultipliers: { capital: 1.25, line: 1.18, siege: 1.12, transport: 0.75 },
+    classAccuracyBonuses: { capital: 0.06, line: 0.04 },
+  },
+  gunTower: {
+    targetWeights: { escort: 1.7, skirmisher: 1.5, line: 1.3, raider: 1.1, capital: 0.9 },
+    rapidFire: { escort: 0.35, skirmisher: 0.30, raider: 0.25, line: 0.20 },
+    damageMultipliers: { escort: 1.1, skirmisher: 1.08, line: 1.0 },
+  },
+  seaFort: {
+    targetWeights: { line: 2.0, capital: 1.8, skirmisher: 1.5, escort: 1.2, siege: 1.0 },
+    rapidFire: { line: 0.35, capital: 0.30, skirmisher: 0.25, escort: 0.20 },
+    damageMultipliers: { line: 1.12, capital: 1.1, skirmisher: 1.05 },
+  },
+  blackFortress: {
+    targetWeights: { capital: 2.4, line: 2.2, siege: 1.9, skirmisher: 1.5, escort: 1.2, suicide: 1.0 },
+    rapidFire: { capital: 0.40, line: 0.35, siege: 0.30, skirmisher: 0.25 },
+    damageMultipliers: { capital: 1.22, line: 1.16, siege: 1.14, skirmisher: 1.05 },
+  },
+  grandSeaCitadel: {
+    targetWeights: { capital_super: 3.0, capital: 2.6, line: 2.4, siege: 2.1, skirmisher: 1.6, escort: 1.2 },
+    rapidFire: { capital_super: 0.50, capital: 0.45, line: 0.40, siege: 0.35 },
+    damageMultipliers: { capital_super: 1.35, capital: 1.25, line: 1.2, siege: 1.16 },
+  },
 };
 
 function getUnitStats(shipId) {
-  const ship = SHIPS[shipId];
+  const ship = UNITS[shipId];
   const override = PROFILE_OVERRIDES[shipId] || {};
   return {
     ...ship,
@@ -591,7 +829,7 @@ function getUnitStats(shipId) {
 }
 
 function buildGroups(fleet) {
-  return Object.entries(normalizeFleetKeys(fleet))
+  return Object.entries(normalizeBattleUnitKeys(fleet))
     .map(([shipId, count]) => ({ name: shipId, stats: getUnitStats(shipId), count, damagePool: 0 }))
     .filter((group) => group.count > 0 && group.stats);
 }
@@ -600,6 +838,14 @@ function fleetToMap(groups) {
   const out = {};
   for (const group of groups) {
     if (group.count > 0) out[group.name] = group.count;
+  }
+  return out;
+}
+
+function filterUnitMap(units = {}, catalog = UNITS) {
+  const out = {};
+  for (const [unitId, count] of Object.entries(units || {})) {
+    if (catalog[unitId] && count > 0) out[unitId] = count;
   }
   return out;
 }
@@ -814,6 +1060,7 @@ function resolveSideDamage(attackerSnapshot, attackerPlayer, defenderSnapshot, d
 export function runBattle({
   attackerFleet = {},
   defenderFleet = {},
+  defenderDefense = {},
   attackerModifiers,
   defenderModifiers,
   attackerResearch = {},
@@ -825,7 +1072,9 @@ export function runBattle({
   const attackerMods = resolveModifiers({ modifiers: attackerModifiers, research: attackerResearch, settings: mergedSettings, side: "attacker" });
   const defenderMods = resolveModifiers({ modifiers: defenderModifiers, research: defenderResearch, settings: mergedSettings, side: "defender" });
   const attackerStart = normalizeFleetKeys(attackerFleet);
-  const defenderStart = normalizeFleetKeys(defenderFleet);
+  const defenderFleetStart = normalizeFleetKeys(defenderFleet);
+  const defenderDefenseStart = normalizeDefenseKeys(defenderDefense);
+  const defenderStart = { ...defenderFleetStart, ...defenderDefenseStart };
   const attackerPlayer = playerFromModifiers(attackerMods);
   const defenderPlayer = playerFromModifiers(defenderMods);
   const attackers = buildGroups(attackerStart);
@@ -836,7 +1085,7 @@ export function runBattle({
     const attackerBefore = fleetToMap(attackers);
     const defenderBefore = fleetToMap(defenders);
     const attackerCountBefore = countFleet(attackerBefore);
-    const defenderCountBefore = countFleet(defenderBefore);
+    const defenderCountBefore = countUnits(defenderBefore, UNITS);
     const attackerSnapshot = attackers.map((group) => ({ ...group }));
     const defenderSnapshot = defenders.map((group) => ({ ...group }));
     const attackerVolleyLuck = sampleMeanOneLognormal(rng, 0.10, 0.75, 1.25);
@@ -882,8 +1131,8 @@ export function runBattle({
       },
       defender: {
         before: defenderCountBefore,
-        after: countFleet(defenderAfter),
-        losses: diffFleet(defenderBefore, defenderAfter),
+        after: countUnits(defenderAfter, UNITS),
+        losses: diffUnits(defenderBefore, defenderAfter, UNITS),
         shots: Math.round(attackerResolved.totals.cannonShots),
         rapidExtraShots: Math.round(attackerResolved.totals.rapidExtraShots),
         effectiveShots: Math.round(attackerResolved.totals.effectiveShots),
@@ -899,9 +1148,13 @@ export function runBattle({
   const attackerSurvivors = fleetToMap(attackers);
   const defenderSurvivors = fleetToMap(defenders);
   const attackerLosses = diffFleet(attackerStart, attackerSurvivors);
-  const defenderLosses = diffFleet(defenderStart, defenderSurvivors);
+  const defenderFleetSurvivors = filterUnitMap(defenderSurvivors, SHIPS);
+  const defenderDefenseSurvivors = filterUnitMap(defenderSurvivors, DEFENSES);
+  const defenderLosses = diffUnits(defenderStart, defenderSurvivors, UNITS);
+  const defenderFleetLosses = diffFleet(defenderFleetStart, defenderFleetSurvivors);
+  const defenderDefenseLosses = diffUnits(defenderDefenseStart, defenderDefenseSurvivors, DEFENSES);
   const attackerLossCost = calculateFleetCost(attackerLosses);
-  const defenderLossCost = calculateFleetCost(defenderLosses);
+  const defenderLossCost = calculateUnitCost(defenderLosses, UNITS);
   let winner = "draw";
   const attackerAlive = countFleet(attackerSurvivors) > 0;
   const defenderAlive = countFleet(defenderSurvivors) > 0;
@@ -914,16 +1167,14 @@ export function runBattle({
   else if (rounds.length >= mergedSettings.maxRounds) winner = "defender";
 
   const wreckage = { wood: 0, metal: 0, rum: 0 };
-  const accumulateWreck = (losses) => {
-    for (const [shipId, lost] of Object.entries(normalizeFleetKeys(losses))) {
-      const ship = SHIPS[shipId];
-      if (!ship || lost <= 0) continue;
-      wreckage.wood += Math.floor(Math.max(0, ship.cost.wood) * lost * WRECK_WOOD_RATE);
-      wreckage.metal += Math.floor(Math.max(0, ship.cost.metal) * lost * WRECK_METAL_RATE);
-    }
+  const addDebris = (target, source) => {
+    target.wood += source.wood;
+    target.metal += source.metal;
+    target.rum += source.rum;
   };
-  accumulateWreck(attackerLosses);
-  accumulateWreck(defenderLosses);
+  addDebris(wreckage, calculateDebrisFromLosses(attackerLosses, SHIPS, 1));
+  addDebris(wreckage, calculateDebrisFromLosses(defenderFleetLosses, SHIPS, 1));
+  const defenseDebris = calculateDebrisFromLosses(defenderDefenseLosses, DEFENSES, DEFENSE_DEBRIS_DESTRUCTIBLE_RATE);
 
   return {
     winner,
@@ -936,18 +1187,24 @@ export function runBattle({
       lossCost: attackerLossCost,
     },
     defender: {
-      start: countFleet(defenderStart),
-      survivors: countFleet(defenderSurvivors),
+      start: countUnits(defenderStart, UNITS),
+      startFleet: countFleet(defenderFleetStart),
+      startDefense: countUnits(defenderDefenseStart, DEFENSES),
+      survivors: countUnits(defenderSurvivors, UNITS),
       survivorFleet: defenderSurvivors,
       losses: defenderLosses,
+      fleetLosses: defenderFleetLosses,
+      defenseLosses: defenderDefenseLosses,
       lossCost: defenderLossCost,
+      defenseDebris,
     },
     debris: wreckage,
+    defenseDebris,
   };
 }
 
-function addFleetTotals(target, fleet) {
-  for (const shipId of Object.keys(SHIPS)) {
+function addUnitTotals(target, fleet, catalog = UNITS) {
+  for (const shipId of Object.keys(catalog)) {
     target[shipId] = (target[shipId] || 0) + (fleet[shipId] || 0);
   }
 }
@@ -955,6 +1212,7 @@ function addFleetTotals(target, fleet) {
 export function runMonteCarlo({
   attackerFleet = {},
   defenderFleet = {},
+  defenderDefense = {},
   attackerModifiers,
   defenderModifiers,
   attackerResearch = {},
@@ -970,14 +1228,17 @@ export function runMonteCarlo({
   const averageAttackerLosses = {};
   const averageDefenderLosses = {};
   const averageDebris = { wood: 0, metal: 0, rum: 0 };
+  const averageDefenseDebris = { wood: 0, metal: 0, rum: 0 };
   let averageAttackerLossPoints = 0;
   let averageDefenderLossPoints = 0;
+  let averageDefenseLossPoints = 0;
   let sample = null;
 
   for (let i = 0; i < runs; i += 1) {
     const battle = runBattle({
       attackerFleet,
       defenderFleet,
+      defenderDefense,
       attackerModifiers,
       defenderModifiers,
       attackerResearch,
@@ -986,19 +1247,23 @@ export function runMonteCarlo({
       rng: createRng(`${seed}:${i}`),
     });
     outcomes[battle.winner] += 1;
-    addFleetTotals(averageAttackerSurvivors, battle.attacker.survivorFleet);
-    addFleetTotals(averageDefenderSurvivors, battle.defender.survivorFleet);
-    addFleetTotals(averageAttackerLosses, battle.attacker.losses);
-    addFleetTotals(averageDefenderLosses, battle.defender.losses);
+    addUnitTotals(averageAttackerSurvivors, battle.attacker.survivorFleet, SHIPS);
+    addUnitTotals(averageDefenderSurvivors, battle.defender.survivorFleet, UNITS);
+    addUnitTotals(averageAttackerLosses, battle.attacker.losses, SHIPS);
+    addUnitTotals(averageDefenderLosses, battle.defender.losses, UNITS);
     averageAttackerLossPoints += battle.attacker.lossCost.points;
     averageDefenderLossPoints += battle.defender.lossCost.points;
+    averageDefenseLossPoints += calculateUnitCost(battle.defender.defenseLosses, DEFENSES).points;
     averageDebris.wood += battle.debris.wood;
     averageDebris.metal += battle.debris.metal;
     averageDebris.rum += battle.debris.rum;
+    averageDefenseDebris.wood += battle.defenseDebris.wood;
+    averageDefenseDebris.metal += battle.defenseDebris.metal;
+    averageDefenseDebris.rum += battle.defenseDebris.rum;
     if (!sample) sample = battle;
   }
 
-  for (const shipId of Object.keys(SHIPS)) {
+  for (const shipId of Object.keys(UNITS)) {
     averageAttackerSurvivors[shipId] = (averageAttackerSurvivors[shipId] || 0) / runs;
     averageDefenderSurvivors[shipId] = (averageDefenderSurvivors[shipId] || 0) / runs;
     averageAttackerLosses[shipId] = (averageAttackerLosses[shipId] || 0) / runs;
@@ -1019,10 +1284,16 @@ export function runMonteCarlo({
     averageDefenderLosses,
     averageAttackerLossPoints: averageAttackerLossPoints / runs,
     averageDefenderLossPoints: averageDefenderLossPoints / runs,
+    averageDefenseLossPoints: averageDefenseLossPoints / runs,
     averageDebris: {
       wood: averageDebris.wood / runs,
       metal: averageDebris.metal / runs,
       rum: averageDebris.rum / runs,
+    },
+    averageDefenseDebris: {
+      wood: averageDefenseDebris.wood / runs,
+      metal: averageDefenseDebris.metal / runs,
+      rum: averageDefenseDebris.rum / runs,
     },
     sample,
   };
