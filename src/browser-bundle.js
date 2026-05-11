@@ -412,7 +412,7 @@ function normalizeModifiers(modifiers = {}) {
 function modifiersFromResearch(research = {}, talents = {}) {
   const weapons = Number(research.weapons ?? research.armaments ?? 0);
   const hulls = Number(research.hulls ?? 0);
-  const armor = Number(research.armor ?? research.fortifications ?? 0);
+  const armor = Number(research.armor ?? research.fortification ?? research.fortifications ?? 0);
   const accuracy = Number(research.fireControl ?? research.accuracy ?? 0);
   const coreAttack = Number(talents.core_attack ?? 0);
   const combatHp = Number(talents.combat_hp ?? 0);
