@@ -419,9 +419,9 @@ function modifiersFromResearch(research = {}, talents = {}) {
   const combatAbsorb = Number(talents.combat_absorb ?? 0);
   const combatCannon = Number(talents.combat_cannon ?? 0);
   return {
-    weaponsPct: weapons * 5 + coreAttack * 4,
-    hullsPct: hulls * 5 + combatHp * 3,
-    armorPct: armor * 5 + combatAbsorb * 3,
+    weaponsPct: weapons * 10 + coreAttack * 4,
+    hullsPct: hulls * 10 + combatHp * 3,
+    armorPct: armor * 10 + combatAbsorb * 3,
     cannonsFlat: combatCannon * 2,
     accuracyPct: accuracy * 5,
   };
@@ -664,6 +664,7 @@ function diffFleet(start = {}, survivors = {}) {
 function resolveModifiers({ modifiers, research, settings, side }) {
   if (modifiers) return normalizeModifiers(modifiers);
   const base = modifiersFromResearch(research || {});
+  if (side === "attacker") base.armorPct = 0;
   if (settings.planningMode === "conservative" && side === "defender") {
     base.weaponsPct += (Number(settings.defenderHiddenArmaments) || 0) * 5;
   }
@@ -1753,7 +1754,7 @@ function renderReportCompare(result) {
 function loadAttacker() {
   const parsed = parseFleetInput(attackerImportText.value);
   currentAttackerFleet = parsed.fleet;
-  if (parsed.modifiers) setModifiers("attacker", parsed.modifiers, { persist: true });
+  if (parsed.modifiers) setModifiers("attacker", { ...parsed.modifiers, armorPct: 0 }, { persist: true });
   setManualFleet("attacker", currentAttackerFleet);
   manualDirty.attacker = false;
   persistBattleInputs();

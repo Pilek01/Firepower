@@ -419,7 +419,7 @@ function renderReportCompare(result) {
 function loadAttacker() {
   const parsed = parseFleetInput(attackerImportText.value);
   currentAttackerFleet = parsed.fleet;
-  if (parsed.modifiers) setModifiers("attacker", parsed.modifiers, { persist: true });
+  if (parsed.modifiers) setModifiers("attacker", { ...parsed.modifiers, armorPct: 0 }, { persist: true });
   setManualFleet("attacker", currentAttackerFleet);
   manualDirty.attacker = false;
   persistBattleInputs();
