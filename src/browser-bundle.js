@@ -1351,10 +1351,12 @@ const { SHIPS, DEFENSES, UNITS, DEFAULT_MODIFIERS, compareFleets, normalizeDefen
 const MODIFIERS = [
   ["weaponsPct", "Atak %"],
   ["hullsPct", "HP %"],
-  ["armorPct", "Pancerz %"],
+  ["armorPct", "Fortyfikacje %"],
   ["accuracyPct", "Celnosc %"],
   ["cannonsFlat", "Armaty +"],
 ];
+
+const ATTACKER_MODIFIERS = MODIFIERS.filter(([id]) => id !== "armorPct");
 
 const BATTLE_INPUT_STORAGE_KEY = "firepower.battleInputs.v1";
 
@@ -1437,7 +1439,8 @@ function hasModifierSource(json) {
 function renderModifierControls(side) {
   const host = document.querySelector(`#${side}-modifiers`);
   host.innerHTML = "";
-  for (const [id, label] of MODIFIERS) {
+  const list = side === "attacker" ? ATTACKER_MODIFIERS : MODIFIERS;
+  for (const [id, label] of list) {
     const item = document.createElement("label");
     item.innerHTML = `${label}<input data-side="${side}" data-modifier="${id}" type="number" step="1" value="0">`;
     host.append(item);
